@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajedrez</title>
+<style>
+  :root{
+    --claro:#ebecd0;
+    --oscuro:#739552;
+    --sel:#f6f669;
+    --mov:rgba(0,0,0,.18);
+    --ult:rgba(255,255,0,.35);
+    --jaque:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,sans-serif;
+    background:linear-gradient(135deg,#2b2b2b,#1a1a1a);
+    color:#eee;min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:20px;gap:16px;
+  }
+  h1{font-weight:600;letter-spacing:1px;font-size:1.8rem}
+  .panel{
+    display:flex;gap:24px;align-items:center;flex-wrap:wrap;
+    justify-content:center;background:#00000033;padding:12px 20px;
+    border-radius:12px;
+  }
+  .estado{font-size:1.1rem;font-weight:600;min-width:180px;text-align:center}
+  select,button{
+    font-family:inherit;font-size:.95rem;padding:8px 14px;border:none;
+    border-radius:8px;cursor:pointer;background:#4a6b32;color:#fff;
+    transition:background .15s;
+  }
+  select{background:#333}
+  button:hover{background:#5c8540}
+  .wrap{position:relative}
+  #tablero{
+    display:grid;
+    grid-template-columns:repeat(8,1fr);
+    grid-template-rows:repeat(8,1fr);
+    width:min(90vw,560px);height:min(90vw,560px);
+    border:6px solid #3a3a3a;border-radius:6px;overflow:hidden;
+    box-shadow:0 10px 40px #000a;
+  }
+  .casilla{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    font-size:min(11vw,46px);cursor:pointer;user-select:none;
+  }
+  .casilla.claro{background:var(--claro)}
+  .casilla.oscuro{background:var(--oscuro)}
+  .casilla.sel{background:var(--sel)!important}
+  .casilla.ult{box-shadow:inset 0 0 0 100px var(--ult)}
+  .casilla.jaque{background:radial-gradient(circle,var(--jaque) 20%,transparent 72%)!important}
+  .punto{
+    position:absolute;width:30%;height:30%;border-radius:50%;
+    background:var(--mov);pointer-events:none;
+  }
+  .captura{
+    position:absolute;inset:6%;border-radius:50%;
+    border:5px solid var(--mov);pointer-events:none;
+  }
+  .coord{
+    position:absolute;font-size:11px;font-weight:700;opacity:.55;
+    pointer-events:none;
+  }
+  .coord.f{left:3px;top:2px}
+  .coord.c{right:3px;bottom:1px}
+  .capturadas{display:flex;gap:2px;flex-wrap:wrap;min-height:28px;
+    font-size:22px;max-width:min(90vw,560px)}
+  .fila-cap{display:flex;justify-content:space-between;width:min(90vw,560px)}
+  /* Modal coronación */
+  .overlay{
+    position:fixed;inset:0;background:#000a;display:none;
+    align-items:center;justify-content:center;z-index:10;
+  }
+  .overlay.on{display:flex}
+  .promo{background:#eee;border-radius:12px;padding:14px;display:flex;gap:8px}
+  .promo div{
+    width:64px;height:64px;font-size:44px;display:flex;align-items:center;
+    justify-content:center;cursor:pointer;border-radius:8px;color:#111;
+  }
+  .promo div:hover{background:#cfe0bd}
+  .pieza{transition:transform .08s}
+  .casilla:active .pieza{transform:scale(1.1)}
+</style>
+</head>
+<body>
+  <h1>♟ Ajedrez</h1>
+  <div class="panel">
+    <div class="estado" id="estado">Turno: Blancas</div>
+    <div class="estado" id="contador" style="display:none;min-width:auto">Jugada 1</div>
+    <label>Modo:
+      <select id="modo">
+        <option value="ia">Contra la máquina</option>
+        <option value="2j">2 jugadores</option>
+        <option value="auto">Máquina vs máquina</option>
+      </select>
+    </label>
+    <label>Dificultad:
+      <select id="dif">
+        <option value="1">Fácil</option>
+        <option value="2" selected>Media</option>
+        <option value="3">Difícil</option>
+      </select>
+    </label>
+    <label id="lblVel" style="display:none">Velocidad:
+      <select id="vel">
+        <option value="1200">Lento</option>
+        <option value="500" selected>Normal</option>
+        <option value="120">Rápido</option>
+      </select>
+    </label>
+    <button id="pausa" style="display:none">Pausar</button>
+    <button id="reiniciar">Reiniciar</button>
+  </div>
+
+  <div class="panel">
+    <span id="statsInfo">Partidas guardadas: 0</span>
+    <button id="descargar">⬇ Descargar Excel</button>
+    <button id="borrar" style="background:#7a3a3a">Borrar historial</button>
+  </div>
+
+  <div class="fila-cap"><div class="capturadas" id="capN"></div></div>
+  <div class="wrap"><div id="tablero"></div></div>
+  <div class="fila-cap"><div class="capturadas" id="capB"></div></div>
+
+  <div class="overlay" id="overlay">
+    <div class="promo" id="promo"></div>
+  </div>
+
+<script>
+/* ====================== Motor de ajedrez ====================== */
+// Piezas: mayúsculas = blancas, minúsculas = negras. '' = vacío.
+// Representación del tablero: array 8x8, fila 0 = rango 8 (arriba).
+
+const GLIFOS = {
+  K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',
+  k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'
+};
+const VALOR = {p:100,n:320,b:330,r:500,q:900,k:20000};
+
+let tablero, turno, enroque, alPaso, seleccion, ultimo, historialCapB, historialCapN;
+let esperandoPromo = null; // {desde,hasta,color}
+let animando = false;
+let autoPausado = false;   // pausa del modo máquina vs máquina
+let numPlies = 0;          // medias jugadas realizadas
+// --- estadísticas / Excel ---
+const STATS_KEY = 'ajedrez_stats_v1';
+let statsPartidas = [];    // historial persistente de partidas
+let tiempoInicio = 0;      // ms al comenzar la partida
+let partidaRegistrada = false; // evita registrar dos veces la misma partida
+
+function inicial(){
+  tablero = [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','p','p','p','p'],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['','','','','','','',''],
+    ['P','P','P','P','P','P','P','P'],
+    ['R','N','B','Q','K','B','N','R'],
+  ];
+  turno = 'b';                    // 'b' blancas, 'n' negras
+  enroque = {K:true,Q:true,k:true,q:true};
+  alPaso = null;                  // [fila,col] casilla capturable al paso
+  seleccion = null;
+  ultimo = null;
+  historialCapB = [];             // piezas negras capturadas por blancas
+  historialCapN = [];
+  esperandoPromo = null;
+  numPlies = 0;
+  tiempoInicio = Date.now();
+  partidaRegistrada = false;
+}
+
+const esBlanca = p => p && p === p.toUpperCase();
+const colorDe = p => p ? (esBlanca(p)?'b':'n') : null;
+const dentro = (f,c) => f>=0&&f<8&&c>=0&&c<8;
+
+// clona estado mínimo para simular
+function clonar(t){ return t.map(fila=>fila.slice()); }
+
+// Genera movimientos pseudo-legales de la pieza en f,c (sin comprobar jaque propio)
+function movsPieza(t, f, c, enr, paso){
+  const p = t[f][c];
+  if(!p) return [];
+  const col = colorDe(p);
+  const res = [];
+  const tipo = p.toLowerCase();
+  const add = (nf,nc)=>{ if(dentro(nf,nc)){ const d=t[nf][nc]; if(!d||colorDe(d)!==col){ res.push([nf,nc]); return !d; } } return false; };
+
+  if(tipo==='p'){
+    const dir = col==='b' ? -1 : 1;
+    const base = col==='b' ? 6 : 1;
+    // avance
+    if(dentro(f+dir,c) && !t[f+dir][c]){
+      res.push([f+dir,c]);
+      if(f===base && !t[f+2*dir][c]) res.push([f+2*dir,c]);
+    }
+    // capturas
+    for(const dc of [-1,1]){
+      const nf=f+dir, nc=c+dc;
+      if(dentro(nf,nc)){
+        const d=t[nf][nc];
+        if(d && colorDe(d)!==col) res.push([nf,nc]);
+        // al paso
+        if(paso && paso[0]===nf && paso[1]===nc) res.push([nf,nc]);
+      }
+    }
+  }
+  else if(tipo==='n'){
+    for(const [df,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])
+      add(f+df,c+dc);
+  }
+  else if(tipo==='k'){
+    for(const df of [-1,0,1]) for(const dc of [-1,0,1]) if(df||dc) add(f+df,c+dc);
+    // enroque
+    if(col==='b' && f===7 && c===4){
+      if(enr.K && !t[7][5] && !t[7][6] && t[7][7]==='R') res.push([7,6,'O-O']);
+      if(enr.Q && !t[7][3] && !t[7][2] && !t[7][1] && t[7][0]==='R') res.push([7,2,'O-O-O']);
+    }
+    if(col==='n' && f===0 && c===4){
+      if(enr.k && !t[0][5] && !t[0][6] && t[0][7]==='r') res.push([0,6,'O-O']);
+      if(enr.q && !t[0][3] && !t[0][2] && !t[0][1] && t[0][0]==='r') res.push([0,2,'O-O-O']);
+    }
+  }
+  else {
+    const rayos = {
+      b:[[-1,-1],[-1,1],[1,-1],[1,1]],
+      r:[[-1,0],[1,0],[0,-1],[0,1]],
+      q:[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]],
+    }[tipo];
+    for(const [df,dc] of rayos){
+      let nf=f+df, nc=c+dc;
+      while(dentro(nf,nc)){
+        const d=t[nf][nc];
+        if(!d){ res.push([nf,nc]); }
+        else { if(colorDe(d)!==col) res.push([nf,nc]); break; }
+        nf+=df; nc+=dc;
+      }
+    }
+  }
+  return res;
+}
+
+// ¿La casilla f,c está atacada por 'porColor'?
+function atacada(t, f, c, porColor){
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++){
+    const p=t[i][j];
+    if(p && colorDe(p)===porColor){
+      // para peones usamos solo capturas
+      if(p.toLowerCase()==='p'){
+        const dir = porColor==='b' ? -1 : 1;
+        if(i+dir===f && (j-1===c||j+1===c)) return true;
+      } else if(p.toLowerCase()==='k'){
+        if(Math.abs(i-f)<=1 && Math.abs(j-c)<=1) return true;
+      } else {
+        for(const [nf,nc] of movsPieza(t,i,j,{},null))
+          if(nf===f && nc===c) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function reyDe(t, col){
+  const R = col==='b'?'K':'k';
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++) if(t[i][j]===R) return [i,j];
+  return null;
+}
+function enJaque(t, col){
+  const r = reyDe(t,col);
+  return r ? atacada(t,r[0],r[1], col==='b'?'n':'b') : false;
+}
+
+// Aplica un movimiento sobre una copia y devuelve nuevo estado {t,enr,paso,promo}
+function aplicar(t, enr, paso, desde, hasta, promoPieza){
+  const nt = clonar(t);
+  const [f,c]=desde, [tf,tc]=hasta;
+  const p = nt[f][c];
+  const col = colorDe(p);
+  const nenr = {...enr};
+  let npaso = null;
+  const tipo = p.toLowerCase();
+
+  // captura al paso
+  if(tipo==='p' && paso && tf===paso[0] && tc===paso[1] && !nt[tf][tc]){
+    nt[f][tc]=''; // capturamos el peón que quedó al lado
+  }
+  // mover
+  nt[tf][tc]=p; nt[f][c]='';
+
+  // enroque: mover torre
+  if(tipo==='k' && Math.abs(tc-c)===2){
+    if(tc===6){ nt[tf][5]=nt[tf][7]; nt[tf][7]=''; }
+    else { nt[tf][3]=nt[tf][0]; nt[tf][0]=''; }
+  }
+  // doble paso de peón
+  if(tipo==='p' && Math.abs(tf-f)===2) npaso=[(f+tf)/2, c];
+  // coronación
+  if(tipo==='p' && (tf===0||tf===7)){
+    const pz = promoPieza || 'q';
+    nt[tf][tc] = col==='b' ? pz.toUpperCase() : pz.toLowerCase();
+  }
+  // perder derechos de enroque
+  if(p==='K'){nenr.K=false;nenr.Q=false;}
+  if(p==='k'){nenr.k=false;nenr.q=false;}
+  if(f===7&&c===0) nenr.Q=false;
+  if(f===7&&c===7) nenr.K=false;
+  if(f===0&&c===0) nenr.q=false;
+  if(f===0&&c===7) nenr.k=false;
+  if(tf===7&&tc===0) nenr.Q=false;
+  if(tf===7&&tc===7) nenr.K=false;
+  if(tf===0&&tc===0) nenr.q=false;
+  if(tf===0&&tc===7) nenr.k=false;
+
+  return {t:nt, enr:nenr, paso:npaso};
+}
+
+// Movimientos legales (filtra los que dejan al rey en jaque)
+function movsLegales(t, f, c, enr, paso){
+  const p=t[f][c]; if(!p) return [];
+  const col=colorDe(p);
+  const res=[];
+  for(const m of movsPieza(t,f,c,enr,paso)){
+    const [tf,tc,extra]=m;
+    // no se puede enrocar estando en jaque o pasando por casilla atacada
+    if(extra){
+      if(enJaque(t,col)) continue;
+      const paso1 = tc===6 ? c+1 : c-1;
+      if(atacada(t,f,paso1, col==='b'?'n':'b')) continue;
+    }
+    const {t:nt}=aplicar(t,enr,paso,[f,c],[tf,tc],'q');
+    if(!enJaque(nt,col)) res.push([tf,tc,extra]);
+  }
+  return res;
+}
+
+// Todos los movimientos legales de un color
+function todosLegales(t, col, enr, paso){
+  const res=[];
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++)
+    if(colorDe(t[i][j])===col)
+      for(const m of movsLegales(t,i,j,enr,paso))
+        res.push([[i,j],[m[0],m[1]],m[2]]);
+  return res;
+}
+
+/* ====================== Interfaz ====================== */
+const $tablero = document.getElementById('tablero');
+const $estado = document.getElementById('estado');
+const $overlay = document.getElementById('overlay');
+const $promo = document.getElementById('promo');
+
+function render(){
+  $tablero.innerHTML='';
+  const legalesSel = seleccion ? movsLegales(tablero, seleccion[0], seleccion[1], enroque, alPaso) : [];
+  const reyJaque = enJaque(tablero, turno) ? reyDe(tablero, turno) : null;
+
+  for(let f=0;f<8;f++) for(let c=0;c<8;c++){
+    const cas = document.createElement('div');
+    cas.className = 'casilla ' + ((f+c)%2===0?'claro':'oscuro');
+    cas.dataset.f=f; cas.dataset.c=c;
+
+    if(seleccion && seleccion[0]===f && seleccion[1]===c) cas.classList.add('sel');
+    if(ultimo && ((ultimo[0][0]===f&&ultimo[0][1]===c)||(ultimo[1][0]===f&&ultimo[1][1]===c)))
+      cas.classList.add('ult');
+    if(reyJaque && reyJaque[0]===f && reyJaque[1]===c) cas.classList.add('jaque');
+
+    // coordenadas
+    if(c===0){ const co=document.createElement('span'); co.className='coord f'; co.textContent=8-f; co.style.color=(f+c)%2===0?'#739552':'#ebecd0'; cas.appendChild(co); }
+    if(f===7){ const co=document.createElement('span'); co.className='coord c'; co.textContent='abcdefgh'[c]; co.style.color=(f+c)%2===0?'#739552':'#ebecd0'; cas.appendChild(co); }
+
+    const p = tablero[f][c];
+    if(p){
+      const sp=document.createElement('span');
+      sp.className='pieza';
+      sp.textContent=GLIFOS[p];
+      sp.style.color = esBlanca(p) ? '#fff' : '#111';
+      sp.style.textShadow = esBlanca(p) ? '0 1px 2px #0008, 0 0 1px #000' : '0 1px 2px #fff4';
+      cas.appendChild(sp);
+    }
+    // indicadores de movimiento
+    for(const m of legalesSel){
+      if(m[0]===f && m[1]===c){
+        const ind=document.createElement('span');
+        ind.className = tablero[f][c] ? 'captura' : 'punto';
+        cas.appendChild(ind);
+      }
+    }
+    cas.addEventListener('click', ()=>clic(f,c));
+    $tablero.appendChild(cas);
+  }
+  actualizarCapturadas();
+}
+
+function actualizarCapturadas(){
+  document.getElementById('capB').innerHTML = historialCapB.map(p=>GLIFOS[p]).join('');
+  document.getElementById('capN').innerHTML = historialCapN.map(p=>GLIFOS[p]).join('');
+}
+
+function clic(f,c){
+  if(animando || esperandoPromo) return;
+  const modo = document.getElementById('modo').value;
+  if(modo==='auto') return;               // en máquina vs máquina el usuario no mueve
+  if(modo==='ia' && turno==='n') return; // no dejar mover a las negras (IA)
+
+  const p = tablero[f][c];
+  // seleccionar pieza propia
+  if(p && colorDe(p)===turno){
+    seleccion=[f,c]; render(); return;
+  }
+  // intentar mover
+  if(seleccion){
+    const legales = movsLegales(tablero, seleccion[0], seleccion[1], enroque, alPaso);
+    const mov = legales.find(m=>m[0]===f && m[1]===c);
+    if(mov){
+      const pieza = tablero[seleccion[0]][seleccion[1]];
+      // ¿coronación?
+      if(pieza.toLowerCase()==='p' && (f===0||f===7)){
+        esperandoPromo = {desde:seleccion, hasta:[f,c], color:turno};
+        mostrarPromo(turno);
+        return;
+      }
+      ejecutar(seleccion,[f,c],'q');
+    } else {
+      seleccion=null; render();
+    }
+  }
+}
+
+function ejecutar(desde, hasta, promoPieza){
+  const pieza = tablero[desde[0]][desde[1]];
+  const destino = tablero[hasta[0]][hasta[1]];
+  // registrar captura
+  const esPaso = pieza.toLowerCase()==='p' && alPaso && hasta[0]===alPaso[0] && hasta[1]===alPaso[1] && !destino;
+  if(destino){
+    if(colorDe(destino)==='n') historialCapB.push(destino); else historialCapN.push(destino);
+  } else if(esPaso){
+    const cap = tablero[desde[0]][hasta[1]];
+    if(colorDe(cap)==='n') historialCapB.push(cap); else historialCapN.push(cap);
+  }
+
+  const est = aplicar(tablero, enroque, alPaso, desde, hasta, promoPieza);
+  tablero = est.t; enroque = est.enr; alPaso = est.paso;
+  ultimo = [desde, hasta];
+  seleccion = null;
+  turno = turno==='b' ? 'n' : 'b';
+  numPlies++;
+  render();
+  actualizarContador();
+
+  if(finPartida()) return;
+
+  // turno de la IA
+  const modo = document.getElementById('modo').value;
+  if(modo==='ia' && turno==='n'){
+    $estado.textContent='La máquina piensa…';
+    animando=true;
+    setTimeout(()=>{ animando=false; jugarIA(); }, 350);
+  } else if(modo==='auto' && !autoPausado){
+    // máquina contra máquina: sigue jugando sola
+    animando=true;
+    const espera = parseInt(document.getElementById('vel').value);
+    setTimeout(()=>{ animando=false; if(!autoPausado) jugarIA(); }, espera);
+  }
+}
+
+function actualizarContador(){
+  // una "jugada" completa = blancas + negras (2 plies)
+  document.getElementById('contador').textContent = 'Jugada ' + (Math.floor(numPlies/2)+1);
+}
+
+function estadoTexto(){
+  const legales = todosLegales(tablero, turno, enroque, alPaso);
+  const jaque = enJaque(tablero, turno);
+  if(legales.length===0){
+    if(jaque) return {fin:true, txt:'¡Jaque mate! Ganan ' + (turno==='b'?'Negras':'Blancas')};
+    return {fin:true, txt:'Tablas por ahogado'};
+  }
+  return {fin:false, txt:'Turno: ' + (turno==='b'?'Blancas':'Negras') + (jaque?' — ¡Jaque!':'')};
+}
+
+function finPartida(){
+  const e = estadoTexto();
+  $estado.textContent = e.txt;
+  if(e.fin && !partidaRegistrada && numPlies>0){
+    partidaRegistrada = true;
+    registrarPartida(e.txt);
+  }
+  return e.fin;
+}
+
+/* ---------- Coronación ---------- */
+function mostrarPromo(col){
+  $promo.innerHTML='';
+  for(const t of ['q','r','b','n']){
+    const d=document.createElement('div');
+    const pz = col==='b'?t.toUpperCase():t.toLowerCase();
+    d.textContent=GLIFOS[pz];
+    d.style.color = col==='b'?'#111':'#111';
+    d.onclick=()=>{
+      const {desde,hasta}=esperandoPromo;
+      esperandoPromo=null;
+      $overlay.classList.remove('on');
+      ejecutar(desde,hasta,t);
+    };
+    $promo.appendChild(d);
+  }
+  $overlay.classList.add('on');
+}
+
+/* ====================== IA (minimax + poda alfa-beta) ====================== */
+// Tablas de posición simples para dar "gusto" posicional a las piezas
+const PST_PEON = [
+  [0,0,0,0,0,0,0,0],
+  [50,50,50,50,50,50,50,50],
+  [10,10,20,30,30,20,10,10],
+  [5,5,10,25,25,10,5,5],
+  [0,0,0,20,20,0,0,0],
+  [5,-5,-10,0,0,-10,-5,5],
+  [5,10,10,-20,-20,10,10,5],
+  [0,0,0,0,0,0,0,0],
+];
+const PST_CABALLO = [
+  [-50,-40,-30,-30,-30,-30,-40,-50],
+  [-40,-20,0,0,0,0,-20,-40],
+  [-30,0,10,15,15,10,0,-30],
+  [-30,5,15,20,20,15,5,-30],
+  [-30,0,15,20,20,15,0,-30],
+  [-30,5,10,15,15,10,5,-30],
+  [-40,-20,0,5,5,0,-20,-40],
+  [-50,-40,-30,-30,-30,-30,-40,-50],
+];
+const PST = {p:PST_PEON, n:PST_CABALLO};
+
+function evaluar(t){
+  let s=0;
+  for(let f=0;f<8;f++) for(let c=0;c<8;c++){
+    const p=t[f][c]; if(!p) continue;
+    const tipo=p.toLowerCase();
+    let v=VALOR[tipo];
+    const pst = PST[tipo];
+    if(pst){ v += esBlanca(p)?pst[f][c]:pst[7-f][c]; }
+    s += esBlanca(p) ? v : -v;
+  }
+  return s; // positivo = ventaja blancas
+}
+
+function minimax(t, enr, paso, prof, alfa, beta, col){
+  const legales = todosLegales(t, col, enr, paso);
+  if(legales.length===0){
+    if(enJaque(t,col)) return col==='b' ? -99999-prof : 99999+prof;
+    return 0; // ahogado
+  }
+  if(prof===0) return evaluar(t);
+
+  // ordenar: capturas primero (mejora la poda)
+  legales.sort((a,b)=>{
+    const va = t[b[1][0]][b[1][1]] ? VALOR[t[b[1][0]][b[1][1]].toLowerCase()] : 0;
+    const vb = t[a[1][0]][a[1][1]] ? VALOR[t[a[1][0]][a[1][1]].toLowerCase()] : 0;
+    return va-vb;
+  });
+
+  if(col==='b'){
+    let mejor=-Infinity;
+    for(const [d,h] of legales){
+      const e=aplicar(t,enr,paso,d,h,'q');
+      const val=minimax(e.t,e.enr,e.paso,prof-1,alfa,beta,'n');
+      mejor=Math.max(mejor,val); alfa=Math.max(alfa,val);
+      if(beta<=alfa) break;
+    }
+    return mejor;
+  } else {
+    let mejor=Infinity;
+    for(const [d,h] of legales){
+      const e=aplicar(t,enr,paso,d,h,'q');
+      const val=minimax(e.t,e.enr,e.paso,prof-1,alfa,beta,'b');
+      mejor=Math.min(mejor,val); beta=Math.min(beta,val);
+      if(beta<=alfa) break;
+    }
+    return mejor;
+  }
+}
+
+function jugarIA(){
+  const prof = parseInt(document.getElementById('dif').value); // 1,2,3
+  const col = turno; // juega quien tenga el turno (auto: blancas o negras)
+  const rival = col==='b' ? 'n' : 'b';
+  const legales = todosLegales(tablero,col,enroque,alPaso);
+  if(legales.length===0){ finPartida(); return; }
+
+  // en 'b' queremos maximizar la evaluación; en 'n' minimizarla
+  let mejorVal = col==='b' ? -Infinity : Infinity, mejores=[];
+  for(const [d,h,extra] of legales){
+    const e=aplicar(tablero,enroque,alPaso,d,h,'q');
+    let val=minimax(e.t,e.enr,e.paso,prof,-Infinity,Infinity,rival);
+    // pequeña aleatoriedad para variar aperturas
+    val += (Math.sin((d[0]*13+d[1]*7+h[0]*3+h[1])*1.7)*6);
+    const mejora = col==='b' ? val>mejorVal+0.0001 : val<mejorVal-0.0001;
+    if(mejora){ mejorVal=val; mejores=[[d,h]]; }
+    else if(Math.abs(val-mejorVal)<6){ mejores.push([d,h]); }
+  }
+  const [d,h]=mejores[Math.floor((mejores.length)*Math.abs(Math.sin(mejorVal*0.31))) % mejores.length] || mejores[0];
+
+  // manejar coronación de la IA (siempre reina)
+  ejecutar(d,h,'q');
+}
+
+/* ====================== Estadísticas + Excel ====================== */
+function cargarStats(){
+  try{ statsPartidas = JSON.parse(localStorage.getItem(STATS_KEY)) || []; }
+  catch(e){ statsPartidas = []; }
+  actualizarInfoStats();
+}
+
+function actualizarInfoStats(){
+  document.getElementById('statsInfo').textContent = 'Partidas guardadas: ' + statsPartidas.length;
+}
+
+function registrarPartida(resultadoTxt){
+  const modoVal = document.getElementById('modo').value;
+  const modoLegible = {ia:'Jugador vs Máquina', '2j':'Jugador vs Jugador', auto:'Máquina vs Máquina'}[modoVal];
+  let resultado = 'Tablas';
+  if(resultadoTxt.includes('Ganan Blancas')) resultado = 'Ganan Blancas';
+  else if(resultadoTxt.includes('Ganan Negras')) resultado = 'Ganan Negras';
+  const dif = modoVal==='2j' ? '—' : {1:'Fácil',2:'Media',3:'Difícil'}[document.getElementById('dif').value];
+  const rec = {
+    fecha: new Date().toLocaleString(),
+    modo: modoLegible,
+    dificultad: dif,
+    resultado: resultado,
+    jugadas: Math.ceil(numPlies/2),
+    plies: numPlies,
+    capBlancas: historialCapB.length, // piezas capturadas por las blancas
+    capNegras: historialCapN.length,  // piezas capturadas por las negras
+    duracion: Math.round((Date.now()-tiempoInicio)/1000),
+  };
+  statsPartidas.push(rec);
+  localStorage.setItem(STATS_KEY, JSON.stringify(statsPartidas));
+  actualizarInfoStats();
+}
+
+function borrarStats(){
+  if(!statsPartidas.length){ return; }
+  if(confirm('¿Borrar las ' + statsPartidas.length + ' partidas guardadas? Esta acción no se puede deshacer.')){
+    statsPartidas = [];
+    localStorage.removeItem(STATS_KEY);
+    actualizarInfoStats();
+  }
+}
+
+/* ---- Generador de .xlsx real (ZIP store + XML, sin librerías) ---- */
+const CRC_TABLE = (()=>{ const t=[]; for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = c&1 ? 0xEDB88320^(c>>>1) : c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(bytes){ let c=0xFFFFFFFF; for(let i=0;i<bytes.length;i++) c = CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+
+function crearZip(files){
+  const parts=[], central=[]; let offset=0;
+  const u16=n=>[n&0xff,(n>>8)&0xff];
+  const u32=n=>[n&0xff,(n>>8)&0xff,(n>>16)&0xff,(n>>24)&0xff];
+  for(const f of files){
+    const nombre=new TextEncoder().encode(f.name);
+    const data=f.data;
+    const crc=crc32(data);
+    const local=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(nombre.length),u16(0));
+    parts.push(new Uint8Array(local), nombre, data);
+    const cen=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(nombre.length),
+      u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+    central.push(new Uint8Array(cen), nombre);
+    offset += local.length + nombre.length + data.length;
+  }
+  let centralSize=0; central.forEach(c=>centralSize+=c.length);
+  const eocd=[].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),
+    u32(centralSize),u32(offset),u16(0));
+  return new Blob([...parts,...central,new Uint8Array(eocd)],
+    {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function colLetra(n){ let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; }
+function escXml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function hojaXml(rows){
+  let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  rows.forEach((row,ri)=>{
+    x+='<row r="'+(ri+1)+'">';
+    row.forEach((cell,ci)=>{
+      const ref=colLetra(ci)+(ri+1);
+      if(typeof cell==='number' && isFinite(cell))
+        x+='<c r="'+ref+'"><v>'+cell+'</v></c>';
+      else
+        x+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+escXml(cell)+'</t></is></c>';
+    });
+    x+='</row>';
+  });
+  return x+'</sheetData></worksheet>';
+}
+
+function descargarExcel(){
+  if(!statsPartidas.length){ alert('Todavía no hay partidas guardadas.'); return; }
+  const cab=['Fecha','Modo','Dificultad','Resultado','Jugadas','Movimientos','Capturas Blancas','Capturas Negras','Duración (s)'];
+  const rows=[cab];
+  for(const p of statsPartidas)
+    rows.push([p.fecha,p.modo,p.dificultad,p.resultado,p.jugadas,p.plies,p.capBlancas,p.capNegras,p.duracion]);
+
+  const enc=new TextEncoder();
+  const CT='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const RELS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const WB='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Partidas" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const WBR='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+
+  const blob=crearZip([
+    {name:'[Content_Types].xml', data:enc.encode(CT)},
+    {name:'_rels/.rels', data:enc.encode(RELS)},
+    {name:'xl/workbook.xml', data:enc.encode(WB)},
+    {name:'xl/_rels/workbook.xml.rels', data:enc.encode(WBR)},
+    {name:'xl/worksheets/sheet1.xml', data:enc.encode(hojaXml(rows))},
+  ]);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='estadisticas_ajedrez.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ====================== Arranque ====================== */
+const $pausa = document.getElementById('pausa');
+
+function nuevaPartida(){
+  inicial();
+  animando=false;
+  autoPausado=false;
+  render();
+  actualizarContador();
+  const fin = finPartida();
+  const modo = document.getElementById('modo').value;
+  const auto = modo==='auto';
+  $pausa.style.display = auto ? '' : 'none';
+  document.getElementById('lblVel').style.display = auto ? '' : 'none';
+  document.getElementById('contador').style.display = auto ? '' : 'none';
+  if(auto){
+    $pausa.textContent='Pausar';
+    if(!fin){
+      animando=true;
+      const espera = parseInt(document.getElementById('vel').value);
+      setTimeout(()=>{ animando=false; if(!autoPausado) jugarIA(); }, espera);
+    }
+  }
+}
+
+$pausa.addEventListener('click', ()=>{
+  autoPausado = !autoPausado;
+  $pausa.textContent = autoPausado ? 'Reanudar' : 'Pausar';
+  if(!autoPausado && document.getElementById('modo').value==='auto' && !estadoTexto().fin){
+    // reanudar
+    animando=true;
+    const espera = parseInt(document.getElementById('vel').value);
+    setTimeout(()=>{ animando=false; if(!autoPausado) jugarIA(); }, espera);
+  }
+});
+
+document.getElementById('reiniciar').addEventListener('click', nuevaPartida);
+document.getElementById('modo').addEventListener('change', nuevaPartida);
+document.getElementById('descargar').addEventListener('click', descargarExcel);
+document.getElementById('borrar').addEventListener('click', borrarStats);
+cargarStats();
+nuevaPartida();
+</script>
+</body>
+</html>
