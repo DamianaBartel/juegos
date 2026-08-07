@@ -216,6 +216,12 @@
   tr:last-child td { border-bottom: none; }
   td.perfect { color: var(--turq-osc); font-weight: 900; }
   .empty { text-align: center; padding: 18px; font-style: italic; }
+  .nube {
+    margin-top: 12px; padding: 8px 12px; border-radius: 10px;
+    font-size: .84rem; font-weight: 700; border: 3px solid var(--borde);
+  }
+  .nube.ok { background: var(--lima); }
+  .nube.pendiente { background: var(--amarillo); }
   .rec-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: flex-end; }
   .rec-actions button { padding: 8px 15px; font-size: .86rem; }
 
@@ -295,6 +301,7 @@
         <tbody id="recordsBody"></tbody>
       </table>
     </div>
+    <div class="nube" id="nubeEstado" style="display:none"></div>
     <div class="rec-actions">
       <button id="excelBtn" class="lima">⬇ Descargar Excel</button>
       <button id="clearBtn" class="crema">Borrar historial</button>
@@ -306,6 +313,11 @@
 const STORAGE_KEY = "hanoi_records_v1";
 const NAME_KEY = "hanoi_lastname_v1";
 const PRES_KEY = "hanoi_presentador_v1";
+const COLA_KEY = "hanoi_pendientes_v1";
+
+// ⬇⬇ PEGÁ ACÁ la URL de tu Apps Script (la que termina en /exec) ⬇⬇
+// Si queda vacía, el juego anda igual pero solo guarda en esta computadora.
+const SHEETS_URL = "";
 
 // Poses de Scooby según lo que pasa en el juego
 const SCOOBY = {
@@ -508,7 +520,9 @@ function checkWin() {
         : `¡Felicitaciones! Lo lograste en ${moves}. El récord posible es ${min}, ¿te animás a igualarlo?`,
       "sentado"
     );
-    saveRecord({ name, disks: numDisks, moves, min, secs, perfect, date: new Date().toLocaleString("es-AR") });
+    const rec = { name, disks: numDisks, moves, min, secs, perfect, date: new Date().toLocaleString("es-AR") };
+    saveRecord(rec);
+    enviarANube(rec);
   }
 }
 
@@ -606,6 +620,70 @@ function descargarExcel(){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 
+// ============================================================
+//   HISTORIAL DE LA CLASE (Google Sheets)
+//   Cada partida ganada se manda a la planilla. Si no hay
+//   internet queda en una cola y se reintenta sola después.
+// ============================================================
+let enviandoCola = false;
+
+function cargarCola() {
+  try { return JSON.parse(localStorage.getItem(COLA_KEY)) || []; }
+  catch { return []; }
+}
+function guardarCola(cola) {
+  localStorage.setItem(COLA_KEY, JSON.stringify(cola.slice(-100)));
+}
+
+function enviarANube(rec) {
+  if (!SHEETS_URL) return;              // nube desactivada
+  const cola = cargarCola();
+  cola.push(rec);
+  guardarCola(cola);
+  actualizarEstadoNube();
+  procesarCola();
+}
+
+async function procesarCola() {
+  if (!SHEETS_URL || enviandoCola) return;
+  enviandoCola = true;
+  while (true) {
+    const cola = cargarCola();          // se relee por si entró otra partida
+    if (!cola.length) break;
+    try {
+      await fetch(SHEETS_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(cola[0])
+      });
+    } catch (err) {
+      break;    // sin conexión: reintentamos más tarde
+    }
+    const actual = cargarCola();        // pudo crecer mientras enviábamos
+    actual.shift();
+    guardarCola(actual);
+    actualizarEstadoNube();
+  }
+  enviandoCola = false;
+  actualizarEstadoNube();
+}
+
+function actualizarEstadoNube() {
+  const el = document.getElementById("nubeEstado");
+  if (!el) return;
+  if (!SHEETS_URL) { el.style.display = "none"; return; }
+  el.style.display = "block";
+  const pendientes = cargarCola().length;
+  if (pendientes === 0) {
+    el.className = "nube ok";
+    el.textContent = "☁ Tus partidas se envían al historial de la clase.";
+  } else {
+    el.className = "nube pendiente";
+    el.textContent = `⏳ ${pendientes} partida(s) sin enviar. Se mandan solas cuando vuelva internet.`;
+  }
+}
+
 // ---- Modo presentador ----
 function aplicarPresentador() {
   presenterEl.classList.toggle("hidden", !presenterOn);
@@ -616,7 +694,14 @@ function aplicarPresentador() {
 
 // ---- Eventos ----
 document.getElementById("startBtn").addEventListener("click", () => {
-  localStorage.setItem(NAME_KEY, nameInput.value.trim());
+  const nom = nameInput.value.trim();
+  if (!nom) {                                   // el nombre es obligatorio
+    setMessage("Escribí tu nombre para poder empezar.", "mal");
+    decir("¡Ruh-roh! Antes de jugar necesito saber tu nombre.", "sentado");
+    nameInput.focus();
+    return;
+  }
+  localStorage.setItem(NAME_KEY, nom);
   newGame();
 });
 document.getElementById("resetBtn").addEventListener("click", resetGame);
@@ -640,6 +725,9 @@ aplicarPresentador();
 minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
 renderRecords();
 render();
+actualizarEstadoNube();
+procesarCola();                                  // reintenta lo que haya quedado pendiente
+window.addEventListener("online", procesarCola); // y cuando vuelve internet
 </script>
 </body>
 </html>
