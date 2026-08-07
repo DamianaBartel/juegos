@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torre de Hanói - Scooby-Doo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --turquesa:  #2FB3AC;
+    --turq-osc:  #1E8C86;
+    --lima:      #A3C940;
+    --naranja:   #F58220;
+    --violeta:   #5B2A86;
+    --viol-osc:  #43206B;
+    --amarillo:  #FFD82E;
+    --marron:    #8B5A2B;
+    --rojo:      #E4453A;
+    --rosa:      #EF7FB1;
+    --crema:     #FFF8E7;
+    --borde:     #43206B;
+    --sombra:    5px 5px 0 var(--borde);
+  }
+  body {
+    background-color: var(--turquesa);
+    color: var(--viol-osc);
+    font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 20px 16px 50px;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: url("assets/auto.png");
+    background-repeat: repeat;
+    background-size: 150px auto;
+    background-position: 0 0;
+    opacity: .14;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  /* ---------- Título ---------- */
+  .titulo {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin: 0 0 22px; flex-wrap: wrap;
+  }
+  .titulo .logo {
+    width: min(480px, 70%); height: auto; display: block;
+    filter: drop-shadow(4px 5px 0 rgba(67,32,107,.35));
+  }
+  .titulo .perro {
+    width: min(270px, 42%); height: auto; display: block;
+    filter: drop-shadow(4px 5px 0 rgba(67,32,107,.28));
+  }
+  .titulo h1 { position: absolute; left: -9999px; }   /* solo lectores de pantalla */
+
+  /* ---------- Bloques ---------- */
+  .caja {
+    background: var(--crema);
+    border: 4px solid var(--borde);
+    border-radius: 16px;
+    box-shadow: var(--sombra);
+  }
+
+  /* ---------- Reglas ---------- */
+  .rules {
+    max-width: 760px; margin: 0 auto 22px; padding: 10px 20px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .rules-texto { flex: 1; min-width: 0; }
+  .rules-perro {
+    width: auto; height: 125px; flex-shrink: 0; display: block;
+    filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
+  }
+  .rules .goal { font-size: 1.02rem; line-height: 1.5; margin-bottom: 10px; }
+  .rules .goal b { color: var(--violeta); }
+  .rules ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .rules li { position: relative; padding-left: 24px; font-size: .93rem; line-height: 1.45; }
+  .rules li::before { content: "🐾"; position: absolute; left: 0; font-size: .85rem; }
+  .rules li b { color: var(--violeta); }
+
+  /* ---------- Controles ---------- */
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 14px; justify-content: center;
+    align-items: flex-end; margin-bottom: 18px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label {
+    font-size: .78rem; font-weight: 800; color: var(--crema);
+    text-transform: uppercase; letter-spacing: .8px;
+    text-shadow: 2px 2px 0 var(--viol-osc);
+  }
+  input[type="text"], input[type="number"] {
+    background: var(--crema); color: var(--viol-osc);
+    border: 4px solid var(--borde); border-radius: 10px;
+    padding: 9px 12px; font-size: 1rem; font-weight: 600;
+    font-family: inherit; outline: none; box-shadow: var(--sombra);
+  }
+  input:focus { border-color: var(--naranja); }
+  input[type="number"] { width: 92px; }
+  input[type="text"]  { width: 180px; }
+
+  button {
+    background: var(--amarillo); color: var(--viol-osc);
+    border: 4px solid var(--borde); border-radius: 10px;
+    padding: 10px 18px; font-size: 1rem; font-weight: 800;
+    font-family: inherit; cursor: pointer; box-shadow: var(--sombra);
+    transition: transform .08s, box-shadow .08s;
+  }
+  button:hover { transform: translate(-1px,-1px); box-shadow: 6px 6px 0 var(--borde); }
+  button:active { transform: translate(5px,5px); box-shadow: 0 0 0 var(--borde); }
+  button.lima    { background: var(--lima); }
+  button.naranja { background: var(--naranja); color: var(--crema); }
+  button.crema   { background: var(--crema); }
+
+  /* ---------- Stats ---------- */
+  .stats { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 20px; }
+  .stat { padding: 10px 20px; text-align: center; min-width: 130px; }
+  .stat .num { font-size: 1.7rem; font-weight: 900; line-height: 1.1; }
+  .stat .lbl { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .7px; margin-top: 3px; }
+  .stat.mov .num { color: var(--naranja); }
+  .stat.min .num { color: var(--violeta); }
+  .stat.tim .num { color: var(--turq-osc); }
+
+  /* ---------- Escenario ---------- */
+  .stage { display: flex; gap: 16px; align-items: stretch; margin-bottom: 10px; }
+
+  .board {
+    flex: 1; display: flex; justify-content: space-around; align-items: flex-end;
+    gap: 10px; padding: 26px 14px 0; height: 355px;
+    background:
+      repeating-linear-gradient(90deg, rgba(91,42,134,.06) 0 26px, transparent 26px 52px),
+      var(--crema);
+  }
+  .peg {
+    position: relative; flex: 1; height: 100%;
+    display: flex; flex-direction: column-reverse; align-items: center;
+    cursor: pointer; border-radius: 10px; transition: background .15s;
+  }
+  .peg:hover { background: rgba(255,216,46,.35); }
+  .peg.selected { background: rgba(255,216,46,.62); }
+  .peg::before {
+    content: ""; position: absolute; bottom: 20px; width: 14px; height: calc(100% - 20px);
+    background: var(--marron); border: 3px solid var(--borde); border-radius: 7px; z-index: 0;
+  }
+  .peg::after {
+    content: ""; position: absolute; bottom: 0; width: 84%; height: 20px;
+    background: var(--marron); border: 4px solid var(--borde); border-radius: 8px;
+  }
+  .peg .name {
+    position: absolute; bottom: -34px; font-size: 1.05rem; font-weight: 900;
+    color: var(--crema); text-shadow: 2px 2px 0 var(--viol-osc);
+  }
+  .disk {
+    height: 28px; border-radius: 9px; margin-bottom: 4px; z-index: 1;
+    border: 4px solid var(--borde);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem; font-weight: 900; color: var(--viol-osc);
+  }
+  .disk.top-selected { transform: translateY(-9px); box-shadow: 0 4px 0 rgba(67,32,107,.35); }
+
+  /* ---------- Presentador Scooby ---------- */
+  .presenter {
+    width: 250px; flex-shrink: 0; height: 355px;
+    display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 12px; gap: 10px; background: var(--lima);
+  }
+  .presenter.hidden { display: none; }
+  .bubble {
+    position: relative; width: 100%;
+    background: var(--crema); border: 4px solid var(--borde); border-radius: 14px;
+    padding: 11px 13px; font-size: .89rem; font-weight: 700; line-height: 1.4;
+    text-align: center; min-height: 80px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bubble::after {
+    content: ""; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+    border: 8px solid transparent; border-top-color: var(--borde);
+  }
+  .presenter img {
+    width: 100%; flex: 1 1 auto; min-height: 0; height: auto;
+    object-fit: contain; display: block;
+    filter: drop-shadow(3px 4px 0 rgba(67,32,107,.3));
+  }
+  .presenter img.hablando { animation: bote .5s ease; }
+  @keyframes bote { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-11px)} }
+
+  /* ---------- Mensaje ---------- */
+  .msg {
+    text-align: center; margin: 32px auto 22px; padding: 11px 18px; max-width: 720px;
+    font-size: 1.02rem; font-weight: 800;
+    background: var(--crema); border: 4px solid var(--borde);
+    border-radius: 14px; box-shadow: var(--sombra);
+  }
+  .msg.win { background: var(--lima); }
+  .msg.mal { background: var(--rojo); color: var(--crema); }
+
+  /* ---------- La pandilla ---------- */
+  .pandilla { text-align: center; margin: 8px 0 4px; }
+  .pandilla img {
+    width: min(560px, 92%); height: auto;
+    filter: drop-shadow(4px 5px 0 rgba(67,32,107,.28));
+  }
+
+  /* ---------- Records ---------- */
+  .records { margin-top: 6px; padding: 22px 18px 16px; }
+  .records h2 { font-size: 1.18rem; margin-bottom: 12px; }
+  .tabla-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 570px; }
+  th, td { padding: 9px 11px; text-align: left; font-size: .88rem; border-bottom: 2px solid var(--borde); }
+  th {
+    background: var(--violeta); color: var(--amarillo); font-size: .72rem;
+    text-transform: uppercase; letter-spacing: .6px; font-weight: 800;
+  }
+  th:first-child { border-top-left-radius: 8px; }
+  th:last-child  { border-top-right-radius: 8px; }
+  tr:last-child td { border-bottom: none; }
+  td.perfect { color: var(--turq-osc); font-weight: 900; }
+  .empty { text-align: center; padding: 18px; font-style: italic; }
+  .rec-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; justify-content: flex-end; }
+  .rec-actions button { padding: 8px 15px; font-size: .86rem; }
+
+  @media (max-width: 720px) {
+    .rules { flex-direction: column; gap: 10px; }
+    .rules-perro { width: 105px; }
+    .titulo .logo { width: 62%; }
+    .titulo .perro { width: 34%; }
+    .stage { flex-direction: column; }
+    .presenter { width: 100%; height: auto; flex-direction: row; align-items: center; }
+    .presenter img { width: 40%; flex: 0 0 auto; height: 130px; }
+    .board { height: 300px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="titulo">
+    <h1>Torre de Hanói</h1>
+    <img class="logo" src="assets/titulo.png" alt="Torre de Hanói">
+    <img class="perro" src="assets/scooby%20acostado.png" alt="">
+  </div>
+
+  <div class="rules caja">
+    <div class="rules-texto">
+      <p class="goal"><b>Objetivo:</b> pasá <b>todos los discos</b> del poste <b>A</b> al poste <b>C</b>, y que queden ordenados de <b>mayor a menor</b> (el más grande abajo y el más chico arriba).</p>
+      <ul>
+        <li>Solo podés mover <b>un disco por vez</b>, y siempre el de más arriba de la pila.</li>
+        <li><b>Nunca</b> podés poner un disco <b>grande arriba de uno más chico</b>.</li>
+        <li>Podés usar el poste <b>B</b> como ayuda para ir acomodando los discos.</li>
+      </ul>
+    </div>
+    <img class="rules-perro" src="assets/ScoobyDooCaminando.webp" alt="">
+  </div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="playerName">Tu nombre</label>
+      <input type="text" id="playerName" placeholder="Escribí tu nombre" maxlength="20">
+    </div>
+    <div class="field">
+      <label for="diskCount">Cantidad de discos</label>
+      <input type="number" id="diskCount" min="1" max="10" value="3">
+    </div>
+    <button id="startBtn" class="lima">▶ Nuevo juego</button>
+    <button id="resetBtn" class="crema">↻ Reiniciar</button>
+    <button id="presBtn" class="naranja">🐶 Scooby: ON</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat mov caja"><div class="num" id="moveCount">0</div><div class="lbl">Movimientos</div></div>
+    <div class="stat min caja"><div class="num" id="minMoves">7</div><div class="lbl">Mínimos posibles</div></div>
+    <div class="stat tim caja"><div class="num" id="timer">0s</div><div class="lbl">Tiempo</div></div>
+  </div>
+
+  <div class="stage">
+    <div class="board caja" id="board"></div>
+    <div class="presenter caja" id="presenter">
+      <div class="bubble" id="bubble">¡Hola! Soy Scooby-Doo y te voy a acompañar. ¿Resolvemos este misterio?</div>
+      <img src="assets/scooby%20sentado.png" alt="Scooby-Doo" id="presImg">
+    </div>
+  </div>
+
+  <div class="msg" id="message">Elegí la cantidad de discos y tocá "Nuevo juego".</div>
+
+  <div class="pandilla">
+    <img src="assets/todos.png" alt="Shaggy, Velma, Daphne, Fred y Scooby-Doo">
+  </div>
+
+  <div class="records caja">
+    <h2>🏆 Partidas guardadas</h2>
+    <div class="tabla-scroll">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Discos</th><th>Movimientos</th><th>Mínimos</th><th>Tiempo</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="recordsBody"></tbody>
+      </table>
+    </div>
+    <div class="rec-actions">
+      <button id="excelBtn" class="lima">⬇ Descargar Excel</button>
+      <button id="clearBtn" class="crema">Borrar historial</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "hanoi_records_v1";
+const NAME_KEY = "hanoi_lastname_v1";
+const PRES_KEY = "hanoi_presentador_v1";
+
+// Poses de Scooby según lo que pasa en el juego
+const SCOOBY = {
+  sentado:   "assets/scooby%20sentado.png",
+  acostado:  "assets/scooby%20acostado.png",
+  caminando: "assets/ScoobyDooCaminando.webp"
+};
+
+let pegs = [[], [], []];      // cada peg es un array de tamaños de disco (grande abajo)
+let numDisks = 3;
+let moves = 0;
+let selectedPeg = null;
+let started = false;
+let won = false;
+let startTime = null;
+let timerId = null;
+let presenterOn = true;
+
+const board = document.getElementById("board");
+const message = document.getElementById("message");
+const moveCountEl = document.getElementById("moveCount");
+const minMovesEl = document.getElementById("minMoves");
+const timerEl = document.getElementById("timer");
+const diskInput = document.getElementById("diskCount");
+const nameInput = document.getElementById("playerName");
+const presenterEl = document.getElementById("presenter");
+const bubbleEl = document.getElementById("bubble");
+const presImg = document.getElementById("presImg");
+const presBtn = document.getElementById("presBtn");
+
+const PEG_NAMES = ["A", "B", "C"];
+// Colores al tono de Scooby-Doo: naranja, lima, turquesa, violeta, marrón...
+const COLORS = ["#F58220","#A3C940","#2FB3AC","#FFD82E","#EF7FB1","#8B5A2B","#E4453A","#7E57C2","#4FC3F7","#C0CA33"];
+
+const FRASES_BIEN = [
+  "¡Scooby-Dooby-Doo!",
+  "¡Ruy bien! Seguí así.",
+  "¡Rexcelente movimiento!",
+  "¡Vas por buen camino!",
+  "¡Eso es! No aflojes.",
+  "¡Rico! Digo... ¡genial!"
+];
+
+function minMoves(n) { return Math.pow(2, n) - 1; }
+
+function setScooby(pose) {
+  if (presImg && SCOOBY[pose]) presImg.src = SCOOBY[pose];
+}
+
+function decir(txt, pose) {
+  if (!bubbleEl) return;
+  bubbleEl.textContent = txt;
+  if (pose) setScooby(pose);
+  presImg.classList.remove("hablando");
+  void presImg.offsetWidth;   // reinicia la animación
+  presImg.classList.add("hablando");
+}
+function fraseAlAzar(lista) { return lista[Math.floor(Math.random() * lista.length)]; }
+
+function newGame() {
+  numDisks = Math.min(10, Math.max(1, parseInt(diskInput.value) || 3));
+  diskInput.value = numDisks;
+  pegs = [[], [], []];
+  for (let s = numDisks; s >= 1; s--) pegs[0].push(s);
+  moves = 0;
+  selectedPeg = null;
+  started = true;
+  won = false;
+  startTime = Date.now();
+  clearInterval(timerId);
+  timerId = setInterval(updateTimer, 1000);
+  moveCountEl.textContent = "0";
+  minMovesEl.textContent = minMoves(numDisks);
+  timerEl.textContent = "0s";
+  setMessage('¡A jugar! Tocá un poste para levantar el disco de arriba.', "");
+  const nom = (nameInput.value || "").trim();
+  decir(nom
+    ? `¡Hola, ${nom}! Con ${numDisks} discos lo mínimo son ${minMoves(numDisks)} movimientos. ¿Podrás?`
+    : `¡Arrancamos! Con ${numDisks} discos lo mínimo son ${minMoves(numDisks)} movimientos.`, "sentado");
+  render();
+}
+
+function resetGame() {
+  if (!started) { newGame(); return; }
+  pegs = [[], [], []];
+  for (let s = numDisks; s >= 1; s--) pegs[0].push(s);
+  moves = 0;
+  selectedPeg = null;
+  won = false;
+  startTime = Date.now();
+  clearInterval(timerId);
+  timerId = setInterval(updateTimer, 1000);
+  moveCountEl.textContent = "0";
+  timerEl.textContent = "0s";
+  setMessage("Reiniciado. ¡Probá de nuevo!", "");
+  decir("¡Volvemos a empezar! Esta vez te sale.", "sentado");
+  render();
+}
+
+function updateTimer() {
+  if (!started || won) return;
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  timerEl.textContent = s + "s";
+}
+
+function setMessage(txt, cls) {
+  message.textContent = txt;
+  message.className = "msg " + (cls || "");
+}
+
+function render() {
+  board.innerHTML = "";
+  const maxW = 88; // % ancho del disco más grande
+  const minW = 26;
+  pegs.forEach((peg, i) => {
+    const pegEl = document.createElement("div");
+    pegEl.className = "peg" + (selectedPeg === i ? " selected" : "");
+    pegEl.addEventListener("click", () => onPegClick(i));
+
+    peg.forEach((size, idx) => {
+      const disk = document.createElement("div");
+      const widthPct = numDisks === 1 ? maxW : minW + (maxW - minW) * (size - 1) / (numDisks - 1);
+      disk.className = "disk";
+      const isTopSelected = selectedPeg === i && idx === peg.length - 1;
+      if (isTopSelected) disk.classList.add("top-selected");
+      disk.style.width = widthPct + "%";
+      disk.style.background = COLORS[(size - 1) % COLORS.length];
+      disk.textContent = size;
+      pegEl.appendChild(disk);
+    });
+
+    const nm = document.createElement("div");
+    nm.className = "name";
+    nm.textContent = PEG_NAMES[i];
+    pegEl.appendChild(nm);
+    board.appendChild(pegEl);
+  });
+}
+
+function onPegClick(i) {
+  if (!started || won) return;
+  if (selectedPeg === null) {
+    if (pegs[i].length === 0) {
+      setMessage("Ese poste está vacío, elegí otro.", "");
+      decir("¡Ruh-roh! Ese poste está vacío, no hay nada para levantar.", "sentado");
+      return;
+    }
+    selectedPeg = i;
+    setMessage("Disco levantado. Tocá el poste de destino.", "");
+    decir(`Levantaste el disco ${pegs[i][pegs[i].length-1]} del poste ${PEG_NAMES[i]}. ¿Dónde lo ponemos?`, "sentado");
+    render();
+  } else {
+    if (i === selectedPeg) { // deseleccionar
+      selectedPeg = null;
+      setMessage("Disco soltado. Elegí otro poste.", "");
+      decir("Lo dejamos donde estaba. Pensalo tranquilo.", "sentado");
+      render();
+      return;
+    }
+    const from = pegs[selectedPeg];
+    const to = pegs[i];
+    const disk = from[from.length - 1];
+    if (to.length > 0 && to[to.length - 1] < disk) {
+      setMessage("¡No podés poner un disco más grande sobre uno más chico!", "mal");
+      decir(`¡Ruh-roh! El disco ${disk} es más grande que el ${to[to.length-1]}. No puede ir encima.`, "sentado");
+      selectedPeg = null;
+      render();
+      return;
+    }
+    to.push(from.pop());
+    moves++;
+    selectedPeg = null;
+    moveCountEl.textContent = moves;
+    checkWin();
+    if (!won) {
+      setMessage("Buen movimiento. Seguí.", "");
+      decir(fraseAlAzar(FRASES_BIEN), "sentado");
+    }
+    render();
+  }
+}
+
+function checkWin() {
+  if (pegs[2].length === numDisks) {
+    won = true;
+    clearInterval(timerId);
+    const secs = Math.floor((Date.now() - startTime) / 1000);
+    const min = minMoves(numDisks);
+    const perfect = moves === min;
+    const name = (nameInput.value || "Anónimo").trim() || "Anónimo";
+    setMessage(
+      perfect
+        ? `🎉 ¡PERFECTO, ${name}! Resolviste ${numDisks} discos en el mínimo de ${min} movimientos.`
+        : `✅ ¡Ganaste, ${name}! ${moves} movimientos (mínimo posible: ${min}).`,
+      "win"
+    );
+    decir(
+      perfect
+        ? `¡SCOOBY-DOOBY-DOO! Lo hiciste en ${min} movimientos, ¡el mínimo posible! ¡Sos un fenómeno!`
+        : `¡Felicitaciones! Lo lograste en ${moves}. El récord posible es ${min}, ¿te animás a igualarlo?`,
+      "sentado"
+    );
+    saveRecord({ name, disks: numDisks, moves, min, secs, perfect, date: new Date().toLocaleString("es-AR") });
+  }
+}
+
+// ---- Guardado en localStorage ----
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveRecord(rec) {
+  const recs = loadRecords();
+  recs.unshift(rec);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(recs.slice(0, 50)));
+  renderRecords();
+}
+function renderRecords() {
+  const recs = loadRecords();
+  const body = document.getElementById("recordsBody");
+  if (recs.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" class="empty">Todavía no hay partidas guardadas.</td></tr>';
+    return;
+  }
+  body.innerHTML = recs.map(r =>
+    `<tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td>${r.disks}</td>
+      <td class="${r.perfect ? "perfect" : ""}">${r.moves}${r.perfect ? " ⭐" : ""}</td>
+      <td>${r.min}</td>
+      <td>${r.secs}s</td>
+      <td>${r.date}</td>
+    </tr>`
+  ).join("");
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// ============================================================
+//   GENERADOR DE .xlsx REAL (ZIP store + XML, sin librerías)
+// ============================================================
+const CRC_TABLE=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_TABLE[(c^b[i])&0xFF]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function crearZip(files){
+  const parts=[],central=[];let offset=0;
+  const u16=n=>[n&0xff,(n>>8)&0xff], u32=n=>[n&0xff,(n>>8)&0xff,(n>>16)&0xff,(n>>24)&0xff];
+  for(const f of files){
+    const nombre=new TextEncoder().encode(f.name), data=f.data, crc=crc32(data);
+    const local=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(nombre.length),u16(0));
+    parts.push(new Uint8Array(local),nombre,data);
+    const cen=[].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(nombre.length),
+      u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+    central.push(new Uint8Array(cen),nombre);
+    offset+=local.length+nombre.length+data.length;
+  }
+  let cs=0;central.forEach(c=>cs+=c.length);
+  const eocd=[].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cs),u32(offset),u16(0));
+  return new Blob([...parts,...central,new Uint8Array(eocd)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function colLetra(n){let s='';n++;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+function escXml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function hojaXml(rows){
+  let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  rows.forEach((row,ri)=>{
+    x+='<row r="'+(ri+1)+'">';
+    row.forEach((cell,ci)=>{
+      const ref=colLetra(ci)+(ri+1);
+      if(typeof cell==='number'&&isFinite(cell)) x+='<c r="'+ref+'"><v>'+cell+'</v></c>';
+      else x+='<c r="'+ref+'" t="inlineStr"><is><t xml:space="preserve">'+escXml(cell)+'</t></is></c>';
+    });
+    x+='</row>';
+  });
+  return x+'</sheetData></worksheet>';
+}
+function descargarExcel(){
+  const recs=loadRecords();
+  if(!recs.length){ alert('Todavía no hay partidas guardadas.'); return; }
+  const rows=[['Nombre','Discos','Movimientos','Mínimos','Perfecto','Tiempo (s)','Fecha']];
+  for(const r of recs) rows.push([r.name||'—', r.disks, r.moves, r.min, r.perfect?'Sí':'No', r.secs, r.date]);
+  const enc=new TextEncoder();
+  const CT='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const RELS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const WB='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Torre de Hanoi" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const WBR='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+  const blob=crearZip([
+    {name:'[Content_Types].xml',data:enc.encode(CT)},
+    {name:'_rels/.rels',data:enc.encode(RELS)},
+    {name:'xl/workbook.xml',data:enc.encode(WB)},
+    {name:'xl/_rels/workbook.xml.rels',data:enc.encode(WBR)},
+    {name:'xl/worksheets/sheet1.xml',data:enc.encode(hojaXml(rows))},
+  ]);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='estadisticas_torre_de_hanoi.xlsx';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+// ---- Modo presentador ----
+function aplicarPresentador() {
+  presenterEl.classList.toggle("hidden", !presenterOn);
+  presBtn.textContent = presenterOn ? "🐶 Scooby: ON" : "🐶 Scooby: OFF";
+  presBtn.className = presenterOn ? "naranja" : "crema";
+  localStorage.setItem(PRES_KEY, presenterOn ? "1" : "0");
+}
+
+// ---- Eventos ----
+document.getElementById("startBtn").addEventListener("click", () => {
+  localStorage.setItem(NAME_KEY, nameInput.value.trim());
+  newGame();
+});
+document.getElementById("resetBtn").addEventListener("click", resetGame);
+document.getElementById("excelBtn").addEventListener("click", descargarExcel);
+presBtn.addEventListener("click", () => { presenterOn = !presenterOn; aplicarPresentador(); });
+document.getElementById("clearBtn").addEventListener("click", () => {
+  if (confirm("¿Seguro que querés borrar todo el historial de partidas?")) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderRecords();
+  }
+});
+diskInput.addEventListener("input", () => {
+  const n = Math.min(10, Math.max(1, parseInt(diskInput.value) || 1));
+  minMovesEl.textContent = minMoves(n);
+});
+
+// ---- Inicio ----
+nameInput.value = localStorage.getItem(NAME_KEY) || "";
+presenterOn = localStorage.getItem(PRES_KEY) !== "0";
+aplicarPresentador();
+minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
+renderRecords();
+render();
+</script>
+</body>
+</html>
