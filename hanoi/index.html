@@ -63,20 +63,45 @@
 
   /* ---------- Reglas ---------- */
   .rules {
-    max-width: 760px; margin: 0 auto 22px; padding: 10px 20px;
-    display: flex; align-items: center; gap: 16px;
+    max-width: 900px; margin: 0 auto 22px; padding: 16px 22px;
+    display: flex; align-items: center; gap: 18px;
   }
   .rules-texto { flex: 1; min-width: 0; }
   .rules-perro {
-    width: auto; height: 125px; flex-shrink: 0; display: block;
+    width: auto; height: 150px; flex-shrink: 0; display: block;
     filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
   }
-  .rules .goal { font-size: 1.02rem; line-height: 1.5; margin-bottom: 10px; }
+  .rules .intro {
+    font-size: .93rem; line-height: 1.55; margin-bottom: 9px; text-align: justify;
+  }
+  .rules .intro b { color: var(--violeta); }
+  .rules .goal {
+    font-size: .96rem; line-height: 1.5; margin: 14px 0 10px;
+    padding-top: 12px; border-top: 3px dashed rgba(67,32,107,.25);
+  }
   .rules .goal b { color: var(--violeta); }
-  .rules ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
-  .rules li { position: relative; padding-left: 24px; font-size: .93rem; line-height: 1.45; }
-  .rules li::before { content: "🐾"; position: absolute; left: 0; font-size: .85rem; }
-  .rules li b { color: var(--violeta); }
+  .rules ol {
+    list-style: none; counter-reset: regla;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .rules ol li {
+    position: relative; padding-left: 32px; font-size: .93rem; line-height: 1.45;
+    counter-increment: regla;
+  }
+  .rules ol li::before {
+    content: counter(regla);
+    position: absolute; left: 0; top: -1px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--violeta); color: var(--amarillo);
+    font-size: .78rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rules ol li b { color: var(--violeta); }
+  .rules .tip {
+    margin-top: 12px; font-size: .88rem; font-style: italic;
+    background: var(--amarillo); border: 3px solid var(--borde);
+    border-radius: 10px; padding: 8px 12px; font-weight: 700;
+  }
 
   /* ---------- Controles ---------- */
   .controls {
@@ -247,12 +272,16 @@
 
   <div class="rules caja">
     <div class="rules-texto">
-      <p class="goal"><b>Objetivo:</b> pasá <b>todos los discos</b> del poste <b>A</b> al poste <b>C</b>, y que queden ordenados de <b>mayor a menor</b> (el más grande abajo y el más chico arriba).</p>
-      <ul>
-        <li>Solo podés mover <b>un disco por vez</b>, y siempre el de más arriba de la pila.</li>
-        <li><b>Nunca</b> podés poner un disco <b>grande arriba de uno más chico</b>.</li>
-        <li>Podés usar el poste <b>B</b> como ayuda para ir acomodando los discos.</li>
-      </ul>
+      <p class="intro">La <b>Torre de Hanoi</b> es un juego de rompecabezas matemático y de lógica. El problema fue inventado en <b>1883</b> por el matemático francés <b>Édouard Lucas</b>. Lo presentó como un rompecabezas comercial bajo el nombre “Torre de Hanoi” (originalmente <i>La Tour d’Hanoï</i>).</p>
+      <p class="intro">Lucas acompañó el problema con una historia mítica: en un templo hindú en Benarés, unos monjes deben mover <b>64 discos de oro</b> de una aguja a otra, siguiendo las mismas reglas. Según la leyenda, cuando completen la tarea, el mundo terminará. <b>¿Por qué se dice esto?</b></p>
+      <p class="intro">Hoy la Torre de Hanoi se usa en la enseñanza de matemáticas y computación, porque es un ejemplo clásico de <b>recursividad</b> y de <b>crecimiento exponencial</b>.</p>
+      <p class="goal"><b>Reglas:</b> el juego tradicional cuenta con tres postes verticales y un número de discos colocados en uno de ellos en orden decreciente de tamaño. El objetivo es trasladarlos todos a otro poste siguiendo las siguientes reglas:</p>
+      <ol>
+        <li>Solo se puede mover <b>un disco por vez</b>.</li>
+        <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
+        <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
+      </ol>
+      <p class="tip">Hacé clic en los discos para moverlos de un poste a otro y experimentar con el reto.</p>
     </div>
     <img class="rules-perro" src="assets/ScoobyDooCaminando.webp" alt="">
   </div>
@@ -323,7 +352,8 @@ const SHEETS_URL = "https://script.google.com/macros/s/AKfycbwuwFl9kSWOGgwpXbv0h
 const SCOOBY = {
   sentado:   "assets/scooby%20sentado.png",
   acostado:  "assets/scooby%20acostado.png",
-  caminando: "assets/ScoobyDooCaminando.webp"
+  caminando: "assets/ScoobyDooCaminando.webp",
+  enojado:   "assets/scooby%20sentado%20enojado.png"
 };
 
 let pegs = [[], [], []];      // cada peg es un array de tamaños de disco (grande abajo)
@@ -697,7 +727,7 @@ document.getElementById("startBtn").addEventListener("click", () => {
   const nom = nameInput.value.trim();
   if (!nom) {                                   // el nombre es obligatorio
     setMessage("Escribí tu nombre para poder empezar.", "mal");
-    decir("¡Ruh-roh! Antes de jugar necesito saber tu nombre.", "sentado");
+    decir("¡Ruh-roh! Así no, ¿eh? Sin tu nombre no empezamos.", "enojado");
     nameInput.focus();
     return;
   }
