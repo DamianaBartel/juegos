@@ -186,7 +186,6 @@
     display: flex; flex-direction: column; align-items: center; justify-content: space-between;
     padding: 12px; gap: 10px; background: var(--lima);
   }
-  .presenter.hidden { display: none; }
   .bubble {
     position: relative; width: 100%;
     background: var(--crema); border: 4px solid var(--borde); border-radius: 14px;
@@ -302,7 +301,6 @@
     </div>
     <button id="startBtn" class="lima">▶ Nuevo juego</button>
     <button id="resetBtn" class="crema">↻ Reiniciar</button>
-    <button id="presBtn" class="naranja">🐶 Scooby: ON</button>
   </div>
 
   <div class="stats">
@@ -346,7 +344,6 @@
 <script>
 const STORAGE_KEY = "hanoi_records_v1";
 const NAME_KEY = "hanoi_lastname_v1";
-const PRES_KEY = "hanoi_presentador_v1";
 const COLA_KEY = "hanoi_pendientes_v1";
 
 // ⬇⬇ PEGÁ ACÁ la URL de tu Apps Script (la que termina en /exec) ⬇⬇
@@ -369,7 +366,6 @@ let started = false;
 let won = false;
 let startTime = null;
 let timerId = null;
-let presenterOn = true;
 
 const board = document.getElementById("board");
 const message = document.getElementById("message");
@@ -378,10 +374,8 @@ const minMovesEl = document.getElementById("minMoves");
 const timerEl = document.getElementById("timer");
 const diskInput = document.getElementById("diskCount");
 const nameInput = document.getElementById("playerName");
-const presenterEl = document.getElementById("presenter");
 const bubbleEl = document.getElementById("bubble");
 const presImg = document.getElementById("presImg");
-const presBtn = document.getElementById("presBtn");
 
 const PEG_NAMES = ["A", "B", "C"];
 // Colores al tono de Scooby-Doo: naranja, lima, turquesa, violeta, marrón...
@@ -720,13 +714,6 @@ function actualizarEstadoNube() {
   }
 }
 
-// ---- Modo presentador ----
-function aplicarPresentador() {
-  presenterEl.classList.toggle("hidden", !presenterOn);
-  presBtn.textContent = presenterOn ? "🐶 Scooby: ON" : "🐶 Scooby: OFF";
-  presBtn.className = presenterOn ? "naranja" : "crema";
-  localStorage.setItem(PRES_KEY, presenterOn ? "1" : "0");
-}
 
 // ---- Eventos ----
 document.getElementById("startBtn").addEventListener("click", () => {
@@ -742,7 +729,6 @@ document.getElementById("startBtn").addEventListener("click", () => {
 });
 document.getElementById("resetBtn").addEventListener("click", resetGame);
 document.getElementById("excelBtn").addEventListener("click", descargarExcel);
-presBtn.addEventListener("click", () => { presenterOn = !presenterOn; aplicarPresentador(); });
 document.getElementById("clearBtn").addEventListener("click", () => {
   if (confirm("¿Seguro que querés borrar todo el historial de partidas?")) {
     localStorage.removeItem(STORAGE_KEY);
@@ -756,8 +742,6 @@ diskInput.addEventListener("input", () => {
 
 // ---- Inicio ----
 nameInput.value = localStorage.getItem(NAME_KEY) || "";
-presenterOn = localStorage.getItem(PRES_KEY) !== "0";
-aplicarPresentador();
 minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
 renderRecords();
 render();
