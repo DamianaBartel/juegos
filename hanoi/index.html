@@ -62,45 +62,47 @@
   }
 
   /* ---------- Reglas ---------- */
-  .rules {
-    max-width: 900px; margin: 0 auto 22px; padding: 16px 22px;
-    display: flex; align-items: center; gap: 18px;
+  /* ---------- Introducción (la historia) ---------- */
+  .historia {
+    max-width: 940px; margin: 0 auto 18px; padding: 18px 24px;
+    display: flex; align-items: center; gap: 20px;
   }
-  .rules-texto { flex: 1; min-width: 0; }
-  .rules-perro {
-    width: auto; height: 150px; flex-shrink: 0; display: block;
+  .historia-texto { flex: 1; min-width: 0; }
+  .historia p {
+    font-size: 1.06rem; line-height: 1.62; margin-bottom: 12px; text-align: justify;
+  }
+  .historia p:last-child { margin-bottom: 0; }
+  .historia b { color: var(--violeta); }
+  .historia-perro {
+    width: auto; height: 170px; flex-shrink: 0; display: block;
     filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
   }
-  .rules .intro {
-    font-size: .93rem; line-height: 1.55; margin-bottom: 9px; text-align: justify;
-  }
-  .rules .intro b { color: var(--violeta); }
-  .rules .goal {
-    font-size: .96rem; line-height: 1.5; margin: 14px 0 10px;
-    padding-top: 12px; border-top: 3px dashed rgba(67,32,107,.25);
-  }
-  .rules .goal b { color: var(--violeta); }
-  .rules ol {
+
+  /* ---------- Reglas (recuadro aparte) ---------- */
+  .reglas { max-width: 940px; margin: 0 auto 22px; padding: 18px 24px; }
+  .reglas h2 { font-size: 1.3rem; color: var(--violeta); margin-bottom: 10px; }
+  .reglas .bajada { font-size: 1.04rem; line-height: 1.55; margin-bottom: 14px; }
+  .reglas ol {
     list-style: none; counter-reset: regla;
-    display: flex; flex-direction: column; gap: 8px;
+    display: flex; flex-direction: column; gap: 10px;
   }
-  .rules ol li {
-    position: relative; padding-left: 32px; font-size: .93rem; line-height: 1.45;
+  .reglas ol li {
+    position: relative; padding-left: 40px; font-size: 1.06rem; line-height: 1.5;
     counter-increment: regla;
   }
-  .rules ol li::before {
+  .reglas ol li::before {
     content: counter(regla);
-    position: absolute; left: 0; top: -1px;
-    width: 22px; height: 22px; border-radius: 50%;
+    position: absolute; left: 0; top: 0;
+    width: 27px; height: 27px; border-radius: 50%;
     background: var(--violeta); color: var(--amarillo);
-    font-size: .78rem; font-weight: 900;
+    font-size: .92rem; font-weight: 900;
     display: flex; align-items: center; justify-content: center;
   }
-  .rules ol li b { color: var(--violeta); }
-  .rules .tip {
-    margin-top: 12px; font-size: .88rem; font-style: italic;
+  .reglas b { color: var(--violeta); }
+  .reglas .tip {
+    margin-top: 16px; font-size: 1rem; font-style: italic;
     background: var(--amarillo); border: 3px solid var(--borde);
-    border-radius: 10px; padding: 8px 12px; font-weight: 700;
+    border-radius: 10px; padding: 10px 14px; font-weight: 700;
   }
 
   /* ---------- Controles ---------- */
@@ -251,8 +253,10 @@
   .rec-actions button { padding: 8px 15px; font-size: .86rem; }
 
   @media (max-width: 720px) {
-    .rules { flex-direction: column; gap: 10px; }
-    .rules-perro { width: 105px; }
+    .historia { flex-direction: column; gap: 12px; padding: 16px 18px; }
+    .historia-perro { height: 125px; }
+    .historia p { text-align: left; }
+    .reglas { padding: 16px 18px; }
     .titulo .logo { width: 62%; }
     .titulo .perro { width: 34%; }
     .stage { flex-direction: column; }
@@ -270,20 +274,23 @@
     <img class="perro" src="assets/scooby%20acostado.png" alt="">
   </div>
 
-  <div class="rules caja">
-    <div class="rules-texto">
-      <p class="intro">La <b>Torre de Hanoi</b> es un juego de rompecabezas matemático y de lógica. El problema fue inventado en <b>1883</b> por el matemático francés <b>Édouard Lucas</b>. Lo presentó como un rompecabezas comercial bajo el nombre “Torre de Hanoi” (originalmente <i>La Tour d’Hanoï</i>).</p>
-      <p class="intro">Lucas acompañó el problema con una historia mítica: en un templo hindú en Benarés, unos monjes deben mover <b>64 discos de oro</b> de una aguja a otra, siguiendo las mismas reglas. Según la leyenda, cuando completen la tarea, el mundo terminará. <b>¿Por qué se dice esto?</b></p>
-      <p class="intro">Hoy la Torre de Hanoi se usa en la enseñanza de matemáticas y computación, porque es un ejemplo clásico de <b>recursividad</b> y de <b>crecimiento exponencial</b>.</p>
-      <p class="goal"><b>Reglas:</b> el juego tradicional cuenta con tres postes verticales y un número de discos colocados en uno de ellos en orden decreciente de tamaño. El objetivo es trasladarlos todos a otro poste siguiendo las siguientes reglas:</p>
-      <ol>
-        <li>Solo se puede mover <b>un disco por vez</b>.</li>
-        <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
-        <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
-      </ol>
-      <p class="tip">Hacé clic en los discos para moverlos de un poste a otro y experimentar con el reto.</p>
+  <div class="historia caja">
+    <div class="historia-texto">
+      <p>La <b>Torre de Hanoi</b> es un juego de rompecabezas matemático y de lógica. El problema fue inventado en <b>1883</b> por el matemático francés <b>Édouard Lucas</b>. Lo presentó como un rompecabezas comercial bajo el nombre “Torre de Hanoi” (originalmente <i>La Tour d’Hanoï</i>).</p>
+      <p>Lucas acompañó el problema con una historia mítica: en un templo hindú en Benarés, unos monjes deben mover <b>64 discos de oro</b> de una aguja a otra, siguiendo las mismas reglas. Según la leyenda, cuando completen la tarea, el mundo terminará. <b>¿Por qué se dice esto?</b></p>
     </div>
-    <img class="rules-perro" src="assets/ScoobyDooCaminando.webp" alt="">
+    <img class="historia-perro" src="assets/ScoobyDooCaminando.webp" alt="">
+  </div>
+
+  <div class="reglas caja">
+    <h2>📜 Reglas del juego</h2>
+    <p class="bajada">El juego tradicional cuenta con tres postes verticales y un número de discos colocados en uno de ellos en orden decreciente de tamaño. El objetivo es trasladarlos todos a otro poste siguiendo las siguientes reglas:</p>
+    <ol>
+      <li>Solo se puede mover <b>un disco por vez</b>.</li>
+      <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
+      <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
+    </ol>
+    <p class="tip">Hacé clic en los discos para moverlos de un poste a otro y experimentar con el reto.</p>
   </div>
 
   <div class="controls">
