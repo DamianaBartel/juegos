@@ -22,21 +22,20 @@
     --sombra:    5px 5px 0 var(--borde);
   }
   body {
-    background-color: #17303A;
+    background-color: var(--turquesa);
     color: var(--viol-osc);
     font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px 16px 50px;
   }
-  /* Fondo: la biblioteca embrujada, fija y a pantalla completa */
+  /* Fondo: la Máquina del Misterio repetida en toda la página */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(11,26,40,.40), rgba(11,26,40,.55)),
-      url("assets/fonfo.png");
-    background-size: cover, cover;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-image: url("assets/auto.png");
+    background-repeat: repeat;
+    background-size: 150px auto;
+    background-position: 0 0;
+    opacity: .14;
   }
   .wrap { max-width: 1060px; margin: 0 auto; }
 
