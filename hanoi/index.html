@@ -22,19 +22,21 @@
     --sombra:    5px 5px 0 var(--borde);
   }
   body {
-    background-color: #2FA093;
+    background-color: #1B2745;
     color: var(--viol-osc);
     font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px 16px 50px;
   }
-  /* Fondo: patrón de detective de Scooby-Doo, repetido en toda la página */
+  /* Fondo: el bosque nocturno con la Máquina del Misterio, fijo y a pantalla completa */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image: url("assets/fondo.png");
-    background-repeat: repeat;
-    background-size: 440px auto;
-    background-position: center top;
+    background-image:
+      linear-gradient(rgba(15,25,50,.35), rgba(15,25,50,.45)),
+      url("assets/fondobosque.jpg");
+    background-size: cover, cover;
+    background-position: center, center;
+    background-repeat: no-repeat, no-repeat;
   }
   .wrap { max-width: 1060px; margin: 0 auto; }
 
