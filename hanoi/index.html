@@ -222,6 +222,67 @@
     filter: drop-shadow(4px 5px 0 rgba(67,32,107,.28));
   }
 
+  /* ---------- Investigación ---------- */
+  .investigacion { max-width: 940px; margin: 0 auto 22px; padding: 18px 24px; }
+  .investigacion h2 { font-size: 1.3rem; color: var(--violeta); margin-bottom: 10px; }
+  .investigacion h3 {
+    font-size: 1.1rem; color: var(--violeta); margin: 18px 0 8px;
+  }
+  .investigacion .bajada { font-size: 1.02rem; line-height: 1.55; margin-bottom: 14px; }
+  .investigacion .paso { font-size: 1.02rem; line-height: 1.5; margin: 14px 0 8px; }
+  .investigacion p { font-size: 1.02rem; line-height: 1.55; margin-bottom: 10px; }
+  .investigacion b { color: var(--violeta); }
+  .investigacion ul {
+    list-style: none; display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px;
+  }
+  .investigacion ul li {
+    position: relative; padding-left: 40px; font-size: 1.02rem; line-height: 1.5;
+  }
+  .investigacion ul li::before {
+    content: "🐾"; position: absolute; left: 0; top: 0; font-size: 1.25rem; line-height: 1.35;
+  }
+
+  .tabla-inv { width: auto; min-width: 0; margin: 4px 0 10px; }
+  .tabla-inv th, .tabla-inv td {
+    border: 3px solid var(--borde); padding: 7px 14px;
+    text-align: center; font-size: 1rem;
+  }
+  .tabla-inv th {
+    background: var(--violeta); color: var(--amarillo);
+    text-align: left; font-size: .82rem; letter-spacing: .4px;
+  }
+  .tabla-inv td { background: var(--crema); font-weight: 900; color: var(--naranja); }
+
+  .formula-caja {
+    background: var(--amarillo); border: 3px solid var(--borde);
+    border-radius: 12px; padding: 12px 14px; margin-top: 6px;
+  }
+  .formula-caja label { display: block; font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+  .formula-fila { display: flex; flex-wrap: wrap; gap: 10px; }
+  .formula-fila input { flex: 1; min-width: 190px; }
+  .formula-aviso { font-size: .92rem; font-weight: 800; color: var(--rojo); margin: 8px 0 0; min-height: 0; }
+
+  .respuesta {
+    margin-top: 18px; padding-top: 16px;
+    border-top: 3px dashed rgba(67,32,107,.3);
+  }
+  .respuesta .tu-respuesta {
+    background: var(--lima); border: 3px solid var(--borde);
+    border-radius: 10px; padding: 8px 12px; font-weight: 700;
+  }
+  .respuesta .destacado { font-size: 1.25rem; }
+  .respuesta .numerote {
+    background: var(--violeta); color: var(--amarillo);
+    border: 3px solid var(--borde); border-radius: 10px;
+    padding: 10px 12px; text-align: center; font-weight: 900;
+    font-size: clamp(.85rem, 2.6vw, 1.25rem); letter-spacing: .5px;
+    overflow-x: auto;
+  }
+  .respuesta .cierre {
+    background: var(--crema); border: 3px solid var(--borde);
+    border-radius: 10px; padding: 10px 12px; font-weight: 700;
+  }
+
   /* ---------- Records ---------- */
   .records { margin-top: 6px; padding: 22px 18px 16px; }
   .records h2 { font-size: 1.18rem; margin-bottom: 12px; }
@@ -318,6 +379,54 @@
   </div>
 
   <div class="msg" id="message">Elegí la cantidad de discos y tocá "Nuevo juego".</div>
+
+  <div class="investigacion caja">
+    <h2>🔍 Investigá: ¿cuál es el mínimo?</h2>
+    <p class="bajada">Ya jugaste varias veces. Ahora te toca pensar como un matemático: ¿existirá una regla que diga, para <b>cualquier</b> cantidad de discos, cuál es el mínimo de movimientos posible?</p>
+
+    <p class="paso"><b>1.</b> Resolvé el juego con 1 disco, después con 2, con 3, con 4 y con 5. Anotá el mínimo de cada uno:</p>
+    <div class="tabla-scroll">
+      <table class="tabla-inv">
+        <tr><th>Cantidad de discos</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+        <tr><th>Movimientos mínimos</th><td>?</td><td>?</td><td>?</td><td>?</td><td>?</td></tr>
+      </table>
+    </div>
+
+    <p class="paso"><b>2.</b> Mirá bien esos números y pensá:</p>
+    <ul>
+      <li>Cada vez que agregás un disco, ¿qué le pasa a la cantidad de movimientos?</li>
+      <li>El número nuevo, ¿tiene algo que ver con <b>el doble del anterior</b>?</li>
+      <li>¿Podrías escribir una regla que sirva para cualquier cantidad de discos?</li>
+    </ul>
+
+    <p class="paso"><b>3.</b> Escribí tu fórmula y comprobá si acertaste:</p>
+    <div class="formula-caja">
+      <label for="formulaInput">Si <b>n</b> es la cantidad de discos, el mínimo de movimientos es…</label>
+      <div class="formula-fila">
+        <input type="text" id="formulaInput" maxlength="60" placeholder="Escribí tu fórmula acá">
+        <button id="formulaBtn" class="lima">Ver si acerté</button>
+      </div>
+      <p class="formula-aviso" id="formulaAviso"></p>
+    </div>
+
+    <div class="respuesta" id="formulaResultado" hidden>
+      <p class="tu-respuesta">Vos escribiste: <b id="formulaTuya"></b></p>
+      <h3>La respuesta</h3>
+      <p>Con <b>n</b> discos, el mínimo es <b class="destacado">2ⁿ − 1</b>.</p>
+      <p><b>¿Por qué?</b> Para mover <b>n</b> discos primero tenés que llevar los <b>n − 1</b> de arriba a otro poste, después mover el más grande (1 movimiento) y volver a poner los <b>n − 1</b> encima. Es decir: <b>el doble del caso anterior, más uno</b>.</p>
+      <div class="tabla-scroll">
+        <table class="tabla-inv">
+          <tr><th>Discos</th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>10</td></tr>
+          <tr><th>Mínimo</th><td>1</td><td>3</td><td>7</td><td>15</td><td>31</td><td>1023</td></tr>
+        </table>
+      </div>
+      <h3>Y ahora, la leyenda</h3>
+      <p>Los monjes de Benarés tienen <b>64 discos</b>. Con la fórmula sabemos exactamente cuántos movimientos necesitan:</p>
+      <p class="numerote">18.446.744.073.709.551.615</p>
+      <p>Si movieran <b>un disco por segundo</b>, sin dormir ni parar nunca, tardarían unos <b>585.000 millones de años</b>. Para comparar: el universo tiene unos <b>13.800 millones de años</b>, así que necesitarían <b>más de 40 veces la edad del universo</b>.</p>
+      <p class="cierre">Por eso la leyenda dice que el mundo se terminaría antes: <b>los monjes nunca van a llegar al final</b>. Y no es magia, es matemática — así de rápido crece el <b>2ⁿ</b>.</p>
+    </div>
+  </div>
 
   <div class="pandilla">
     <img src="assets/todos.png" alt="Shaggy, Velma, Daphne, Fred y Scooby-Doo">
@@ -715,6 +824,33 @@ function actualizarEstadoNube() {
 }
 
 
+// ============================================================
+//   INVESTIGACIÓN: el alumno propone su fórmula
+// ============================================================
+const FORMULA_KEY = "hanoi_formula_v1";
+const formulaInput = document.getElementById("formulaInput");
+const formulaAviso = document.getElementById("formulaAviso");
+const formulaResultado = document.getElementById("formulaResultado");
+const formulaTuya = document.getElementById("formulaTuya");
+
+function mostrarRespuesta(texto) {
+  formulaTuya.textContent = texto;
+  formulaResultado.hidden = false;
+}
+
+document.getElementById("formulaBtn").addEventListener("click", () => {
+  const texto = formulaInput.value.trim();
+  if (!texto) {
+    formulaAviso.textContent = "Escribí primero lo que pensás, aunque no estés seguro.";
+    formulaInput.focus();
+    return;
+  }
+  formulaAviso.textContent = "";
+  localStorage.setItem(FORMULA_KEY, texto);
+  mostrarRespuesta(texto);
+  formulaResultado.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 // ---- Eventos ----
 document.getElementById("startBtn").addEventListener("click", () => {
   const nom = nameInput.value.trim();
@@ -745,6 +881,8 @@ nameInput.value = localStorage.getItem(NAME_KEY) || "";
 minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
 renderRecords();
 render();
+const formulaGuardada = localStorage.getItem(FORMULA_KEY);
+if (formulaGuardada) { formulaInput.value = formulaGuardada; mostrarRespuesta(formulaGuardada); }
 actualizarEstadoNube();
 procesarCola();                                  // reintenta lo que haya quedado pendiente
 window.addEventListener("online", procesarCola); // y cuando vuelve internet
