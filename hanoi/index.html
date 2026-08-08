@@ -82,8 +82,13 @@
   .reglas { max-width: 940px; margin: 0 auto 22px; padding: 18px 24px; }
   .reglas h2 { font-size: 1.3rem; color: var(--violeta); margin-bottom: 10px; }
   .reglas .bajada { font-size: 1.02rem; line-height: 1.55; margin-bottom: 14px; }
+  .reglas-cuerpo { display: flex; align-items: center; gap: 18px; }
+  .reglas-perro {
+    width: 235px; height: auto; flex-shrink: 0; display: block;
+    filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
+  }
   .reglas ul {
-    list-style: none;
+    list-style: none; flex: 1; min-width: 0;
     display: flex; flex-direction: column; gap: 10px;
   }
   .reglas ul li {
@@ -253,6 +258,8 @@
     .historia-perro { height: 125px; }
     .historia p { text-align: left; }
     .reglas { padding: 16px 18px; }
+    .reglas-cuerpo { flex-direction: column; gap: 12px; }
+    .reglas-perro { width: 190px; align-self: center; }
     .titulo .logo { width: 62%; }
     .titulo .perro { width: 34%; }
     .stage { flex-direction: column; }
@@ -281,11 +288,14 @@
   <div class="reglas caja">
     <h2>Reglas del juego</h2>
     <p class="bajada">El juego tradicional cuenta con tres postes verticales y un número de discos colocados en uno de ellos en orden decreciente de tamaño. El objetivo es trasladarlos todos a otro poste siguiendo las siguientes reglas:</p>
-    <ul>
-      <li>Solo se puede mover <b>un disco por vez</b>.</li>
-      <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
-      <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
-    </ul>
+    <div class="reglas-cuerpo">
+      <ul>
+        <li>Solo se puede mover <b>un disco por vez</b>.</li>
+        <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
+        <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
+      </ul>
+      <img class="reglas-perro" src="assets/scooby%20acostado.png" alt="">
+    </div>
     <p class="tip">Hacé clic en los discos para moverlos de un poste a otro y experimentar con el reto.</p>
   </div>
 
