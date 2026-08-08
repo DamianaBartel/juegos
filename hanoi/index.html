@@ -22,31 +22,27 @@
     --sombra:    5px 5px 0 var(--borde);
   }
   body {
-    background-color: #16233A;
+    background-color: #2FA093;
     color: var(--viol-osc);
     font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
     min-height: 100vh;
     padding: 20px 16px 50px;
   }
-  /* Fondo: la biblioteca embrujada, con un velo oscuro encima para que
-     los recuadros del juego se sigan leyendo bien */
+  /* Fondo: patrón de detective de Scooby-Doo, repetido en toda la página */
   body::before {
     content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(11,22,38,.45), rgba(11,22,38,.62)),
-      url("assets/fondo.png");
-    background-size: cover, cover;
-    background-position: center, center;
-    background-repeat: no-repeat, no-repeat;
+    background-image: url("assets/fondo.png");
+    background-repeat: repeat;
+    background-size: 440px auto;
+    background-position: center top;
   }
   .wrap { max-width: 1060px; margin: 0 auto; }
 
   /* ---------- Título ---------- */
   .titulo { text-align: center; margin: 0 0 22px; }
   .titulo .banner {
-    width: min(680px, 100%); height: auto; display: block; margin: 0 auto;
-    border: 4px solid var(--borde); border-radius: 16px;
-    box-shadow: 0 10px 26px rgba(0,0,0,.5);
+    width: min(700px, 100%); height: auto; display: block; margin: 0 auto;
+    filter: drop-shadow(5px 6px 0 rgba(67,32,107,.35));
   }
   .titulo h1 { position: absolute; left: -9999px; }   /* solo lectores de pantalla */
 
@@ -257,7 +253,7 @@
     .reglas { padding: 16px 18px; }
     .reglas-cuerpo { flex-direction: column; gap: 12px; }
     .reglas-perro { width: 190px; align-self: center; }
-    .titulo .banner { border-width: 3px; border-radius: 12px; }
+    .titulo .banner { width: 100%; }
     .stage { flex-direction: column; }
     .presenter { width: 100%; height: auto; flex-direction: row; align-items: center; }
     .presenter img { width: 40%; flex: 0 0 auto; height: 130px; }
@@ -269,7 +265,7 @@
 <div class="wrap">
   <div class="titulo">
     <h1>El juego de la Torre de Hanoi</h1>
-    <img class="banner" src="assets/tituloconscooby.png" alt="El juego de la Torre de Hanoi - ¿Podrá Scooby resolver el misterio?">
+    <img class="banner" src="assets/tituloscoobydoo.png" alt="El juego de la Torre de Hanoi">
   </div>
 
   <div class="historia caja">
