@@ -69,12 +69,12 @@
   }
   .historia-texto { flex: 1; min-width: 0; }
   .historia p {
-    font-size: 1.06rem; line-height: 1.62; margin-bottom: 12px; text-align: justify;
+    font-size: .97rem; line-height: 1.55; margin-bottom: 10px; text-align: justify;
   }
   .historia p:last-child { margin-bottom: 0; }
   .historia b { color: var(--violeta); }
   .historia-perro {
-    width: auto; height: 170px; flex-shrink: 0; display: block;
+    width: auto; height: 235px; flex-shrink: 0; display: block;
     filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
   }
 
@@ -82,21 +82,17 @@
   .reglas { max-width: 940px; margin: 0 auto 22px; padding: 18px 24px; }
   .reglas h2 { font-size: 1.3rem; color: var(--violeta); margin-bottom: 10px; }
   .reglas .bajada { font-size: 1.04rem; line-height: 1.55; margin-bottom: 14px; }
-  .reglas ol {
-    list-style: none; counter-reset: regla;
+  .reglas ul {
+    list-style: none;
     display: flex; flex-direction: column; gap: 10px;
   }
-  .reglas ol li {
+  .reglas ul li {
     position: relative; padding-left: 40px; font-size: 1.06rem; line-height: 1.5;
-    counter-increment: regla;
   }
-  .reglas ol li::before {
-    content: counter(regla);
+  .reglas ul li::before {
+    content: "🐾";
     position: absolute; left: 0; top: 0;
-    width: 27px; height: 27px; border-radius: 50%;
-    background: var(--violeta); color: var(--amarillo);
-    font-size: .92rem; font-weight: 900;
-    display: flex; align-items: center; justify-content: center;
+    font-size: 1.25rem; line-height: 1.35;
   }
   .reglas b { color: var(--violeta); }
   .reglas .tip {
@@ -283,13 +279,13 @@
   </div>
 
   <div class="reglas caja">
-    <h2>📜 Reglas del juego</h2>
+    <h2>Reglas del juego</h2>
     <p class="bajada">El juego tradicional cuenta con tres postes verticales y un número de discos colocados en uno de ellos en orden decreciente de tamaño. El objetivo es trasladarlos todos a otro poste siguiendo las siguientes reglas:</p>
-    <ol>
+    <ul>
       <li>Solo se puede mover <b>un disco por vez</b>.</li>
       <li>Un disco grande <b>nunca</b> puede colocarse sobre uno más pequeño.</li>
       <li>Solo se puede mover el disco que está <b>arriba</b> en cada poste.</li>
-    </ol>
+    </ul>
     <p class="tip">Hacé clic en los discos para moverlos de un poste a otro y experimentar con el reto.</p>
   </div>
 
@@ -538,7 +534,8 @@ function onPegClick(i) {
 }
 
 function checkWin() {
-  if (pegs[2].length === numDisks) {
+  // Se gana armando la torre completa en cualquier poste que no sea el de origen (B o C)
+  if (pegs[1].length === numDisks || pegs[2].length === numDisks) {
     won = true;
     clearInterval(timerId);
     const secs = Math.floor((Date.now() - startTime) / 1000);
