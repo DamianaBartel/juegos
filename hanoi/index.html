@@ -58,19 +58,13 @@
   /* ---------- Reglas ---------- */
   /* ---------- Introducción (la historia) ---------- */
   .historia {
-    max-width: 940px; margin: 0 auto 18px; padding: 0 24px;
-    display: flex; align-items: center; gap: 20px;
+    max-width: 940px; margin: 0 auto 18px; padding: 14px 24px;
   }
-  .historia-texto { flex: 1; min-width: 0; }
   .historia p {
     font-size: 1.02rem; line-height: 1.55; margin-bottom: 10px; text-align: justify;
   }
   .historia p:last-child { margin-bottom: 0; }
   .historia b { color: var(--violeta); }
-  .historia-perro {
-    width: auto; height: 235px; flex-shrink: 0; display: block;
-    filter: drop-shadow(3px 4px 0 rgba(67,32,107,.25));
-  }
 
   /* ---------- Reglas (recuadro aparte) ---------- */
   .reglas { max-width: 940px; margin: 0 auto 22px; padding: 18px 24px; }
@@ -275,8 +269,7 @@
   .rec-actions button { padding: 8px 15px; font-size: .86rem; }
 
   @media (max-width: 720px) {
-    .historia { flex-direction: column; gap: 12px; padding: 0 18px; }
-    .historia-perro { height: 125px; }
+    .historia { padding: 14px 18px; }
     .historia p { text-align: left; }
     .reglas { padding: 16px 18px; }
     .reglas-cuerpo { flex-direction: column; gap: 12px; }
@@ -301,7 +294,6 @@
       <p>La <b>Torre de Hanoi</b> es un juego de rompecabezas matemático y de lógica. El problema fue inventado en <b>1883</b> por el matemático francés <b>Édouard Lucas</b>. Lo presentó como un rompecabezas comercial bajo el nombre “Torre de Hanoi” (originalmente <i>La Tour d’Hanoï</i>).</p>
       <p>Lucas acompañó el problema con una historia mítica: en un templo hindú en Benarés, unos monjes deben mover <b>64 discos de oro</b> de una aguja a otra, siguiendo las mismas reglas. Según la leyenda, cuando completen la tarea, el mundo terminará. <b>¿Por qué se dice esto?</b></p>
     </div>
-    <img class="historia-perro" src="assets/ScoobyDooCaminando.webp" alt="">
   </div>
 
   <div class="reglas caja">
@@ -766,7 +758,6 @@ function actualizarEstadoNube() {
 // ============================================================
 //   INVESTIGACIÓN: el alumno propone su fórmula
 // ============================================================
-const FORMULA_KEY = "hanoi_formula_v1";
 const formulaInput = document.getElementById("formulaInput");
 const formulaAviso = document.getElementById("formulaAviso");
 const formulaResultado = document.getElementById("formulaResultado");
@@ -840,7 +831,6 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
     return;
   }
   formulaAviso.textContent = "";
-  localStorage.setItem(FORMULA_KEY, texto);
   mostrarDevolucion(evaluarFormula(texto));
 });
 
@@ -874,8 +864,6 @@ nameInput.value = localStorage.getItem(NAME_KEY) || "";
 minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
 renderRecords();
 render();
-const formulaGuardada = localStorage.getItem(FORMULA_KEY);
-if (formulaGuardada) formulaInput.value = formulaGuardada;   // la deja escrita, sin devolución
 actualizarEstadoNube();
 procesarCola();                                  // reintenta lo que haya quedado pendiente
 window.addEventListener("online", procesarCola); // y cuando vuelve internet
