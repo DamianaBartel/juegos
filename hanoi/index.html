@@ -236,6 +236,30 @@
     display: flex; align-items: center; gap: 16px; margin-top: 16px;
     padding: 12px 16px; border: 3px solid var(--borde); border-radius: 12px;
   }
+  .pregunta-final {
+    margin-top: 16px; padding: 14px 16px;
+    background: var(--crema); border: 3px solid var(--borde); border-radius: 12px;
+  }
+  .pregunta-final h3 { font-size: 1.15rem; color: var(--violeta); margin-bottom: 8px; }
+  .pregunta-final p { font-size: 1.02rem; line-height: 1.5; margin-bottom: 10px; }
+  .pregunta-final .pista {
+    background: var(--amarillo); border: 3px solid var(--borde); border-radius: 10px;
+    padding: 8px 12px; font-size: .95rem; font-weight: 700;
+  }
+  .pregunta-final textarea {
+    width: 100%; background: #fff; color: var(--viol-osc);
+    border: 4px solid var(--borde); border-radius: 10px;
+    padding: 10px 12px; font-size: 1rem; font-family: inherit; font-weight: 600;
+    outline: none; resize: vertical; margin-bottom: 12px;
+  }
+  .pregunta-final textarea:focus { border-color: var(--naranja); }
+  .aviso-final { font-size: .92rem; font-weight: 800; color: var(--rojo); margin: 10px 0 0; }
+  .gracias {
+    margin-top: 12px; background: var(--lima);
+    border: 3px solid var(--borde); border-radius: 10px;
+    padding: 10px 12px; font-weight: 800;
+  }
+
   .devolucion.bien { background: var(--lima); }
   .devolucion.seguir { background: var(--amarillo); }
   .devolucion img { width: 120px; height: auto; flex-shrink: 0; display: block; }
@@ -357,6 +381,16 @@
     <div class="devolucion" id="formulaResultado" hidden>
       <img id="formulaPerro" src="" alt="">
       <p id="formulaMensaje"></p>
+    </div>
+
+    <div class="pregunta-final" id="preguntaFinal" hidden>
+      <h3>🕵️ Última pregunta del misterio</h3>
+      <p>Al principio leíste que, según la leyenda, cuando los monjes terminen de mover los <b>64 discos</b> el mundo se va a acabar. Ahora que tenés la fórmula: <b>¿por qué se dice esto?</b></p>
+      <p class="pista">Pista: usá tu fórmula con <b>n = 64</b> y pensá cuánto tardarían moviendo <b>un disco por segundo</b>, sin parar nunca.</p>
+      <textarea id="respuestaFinal" rows="4" maxlength="600" placeholder="Escribí acá tu explicación"></textarea>
+      <button id="respuestaBtn" class="lima">Guardar mi respuesta</button>
+      <p class="aviso-final" id="respuestaAviso"></p>
+      <p class="gracias" id="respuestaGracias" hidden></p>
     </div>
   </div>
 
@@ -804,8 +838,11 @@ function evaluarFormula(texto) {
   }
 }
 
+const preguntaFinal = document.getElementById("preguntaFinal");
+
 function mostrarDevolucion(estado) {
   formulaResultado.hidden = false;
+  preguntaFinal.hidden = estado !== true;      // el cartel final solo si acertó
   if (estado === true) {
     formulaResultado.className = "devolucion bien";
     formulaPerro.src = "assets/scoobydoofeliz.png";
@@ -833,6 +870,20 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
   }
   formulaAviso.textContent = "";
   mostrarDevolucion(evaluarFormula(texto));
+});
+
+document.getElementById("respuestaBtn").addEventListener("click", () => {
+  const texto = document.getElementById("respuestaFinal").value.trim();
+  const aviso = document.getElementById("respuestaAviso");
+  const gracias = document.getElementById("respuestaGracias");
+  if (texto.length < 15) {
+    aviso.textContent = "Contá un poco más: explicá con tus palabras por qué tardarían tanto.";
+    gracias.hidden = true;
+    return;
+  }
+  aviso.textContent = "";
+  gracias.hidden = false;
+  gracias.textContent = "¡Muy bien! Guardaste tu explicación. Mostrásela a tu docente y comparala con la de tus compañeros.";
 });
 
 // ---- Eventos ----
