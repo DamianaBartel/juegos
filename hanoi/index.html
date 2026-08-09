@@ -261,7 +261,7 @@
   }
 
   .devolucion.bien { background: var(--lima); }
-  .devolucion.seguir { background: var(--amarillo); }
+  .devolucion.seguir { background: var(--amarillo); padding: 0 16px; }
   .devolucion img { width: 120px; height: auto; flex-shrink: 0; display: block; }
   .devolucion p { margin: 0; font-weight: 800; font-size: 1.04rem; line-height: 1.45; }
   @media (max-width: 560px) {
@@ -386,7 +386,6 @@
     <div class="pregunta-final" id="preguntaFinal" hidden>
       <h3>🕵️ Última pregunta del misterio</h3>
       <p>Al principio leíste que, según la leyenda, cuando los monjes terminen de mover los <b>64 discos</b> el mundo se va a acabar. Ahora que tenés la fórmula: <b>¿por qué se dice esto?</b></p>
-      <p class="pista">Pista: usá tu fórmula con <b>n = 64</b> y pensá cuánto tardarían moviendo <b>un disco por segundo</b>, sin parar nunca.</p>
       <textarea id="respuestaFinal" rows="4" maxlength="600" placeholder="Escribí acá tu explicación"></textarea>
       <button id="respuestaBtn" class="lima">Guardar mi respuesta</button>
       <p class="aviso-final" id="respuestaAviso"></p>
