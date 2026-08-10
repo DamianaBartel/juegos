@@ -4,8 +4,8 @@
  * Guarda TODO en una sola pestaña ("Partidas"), con estas columnas:
  *
  *  A Fecha | B Nombre | C Discos | D Movimientos | E Mínimos | F Perfecto |
- *  G Tiempo (s) | H Intentos de fórmula | I Fórmulas que probó |
- *  J ¿Acertó la fórmula? | K Respuesta del acertijo
+ *  G Tiempo (s) | H Fórmulas que probó |
+ *  I ¿Acertó la fórmula? | J Respuesta del acertijo
  *
  * Cada partida ganada agrega una fila.
  * Los intentos de fórmula y la respuesta del acertijo se escriben en la

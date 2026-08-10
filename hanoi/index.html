@@ -730,6 +730,7 @@ function descargarExcel(){
 //   internet queda en una cola y se reintenta sola después.
 // ============================================================
 let enviandoCola = false;
+let alumnoActual = "";        // para detectar cuando empieza a jugar otra persona
 
 function cargarCola() {
   try { return JSON.parse(localStorage.getItem(COLA_KEY)) || []; }
@@ -862,6 +863,22 @@ function mostrarDevolucion(estado) {
 
 const INTENTOS_KEY = "hanoi_intentos_v1";
 
+/* Deja la sección de investigación como recién entrada.
+   Se usa cuando empieza a jugar otra persona, para que no vea
+   la fórmula ni la respuesta del alumno anterior. */
+function reiniciarInvestigacion() {
+  formulaInput.value = "";
+  formulaAviso.textContent = "";
+  formulaResultado.hidden = true;
+  preguntaFinal.hidden = true;
+  document.getElementById("respuestaFinal").value = "";
+  document.getElementById("respuestaAviso").textContent = "";
+  const gracias = document.getElementById("respuestaGracias");
+  gracias.hidden = true;
+  gracias.textContent = "";
+  localStorage.removeItem(INTENTOS_KEY);
+}
+
 document.getElementById("formulaBtn").addEventListener("click", () => {
   const texto = formulaInput.value.trim();
   if (!texto) {
@@ -925,6 +942,11 @@ document.getElementById("startBtn").addEventListener("click", () => {
     nameInput.focus();
     return;
   }
+  // Si el nombre cambió, es otra persona: se limpia lo del alumno anterior
+  if (alumnoActual && nom.toLowerCase() !== alumnoActual.toLowerCase()) {
+    reiniciarInvestigacion();
+  }
+  alumnoActual = nom;
   localStorage.setItem(NAME_KEY, nom);
   newGame();
 });
