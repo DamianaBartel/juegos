@@ -30,11 +30,16 @@ function doPost(e) {
 
     if (tipo === "formula") {
       const fila = filaDelAlumno(h, nombre);
-      const intentos = (Number(h.getRange(fila, COL_INTENTOS).getValue()) || 0) + 1;
-      const previas = h.getRange(fila, COL_FORMULAS).getValue();
+      const previas = String(h.getRange(fila, COL_FORMULAS).getValue() || "");
       const nueva = datos.formula + " (" + datos.correcta + ")";
-      h.getRange(fila, COL_INTENTOS).setValue(intentos);
-      h.getRange(fila, COL_FORMULAS).setValue(previas ? previas + "  |  " + nueva : nueva);
+      const texto = previas ? previas + "  |  " + nueva : nueva;
+
+      // El número de intentos se cuenta sobre el texto, así no depende
+      // del formato que tenga la celda (antes se leía como fecha).
+      const intentos = texto.split("|").length;
+
+      h.getRange(fila, COL_FORMULAS).setValue(texto);
+      h.getRange(fila, COL_INTENTOS).setValue(intentos).setNumberFormat("0");
       h.getRange(fila, COL_ACERTO).setValue(datos.correcta);
 
     } else if (tipo === "acertijo") {
