@@ -1,24 +1,23 @@
 /**
- * CONECTOR: Torre de Hanói  ->  Google Sheets   (v4)
+ * CONECTOR: Torre de Hanói  ->  Google Sheets   (v5)
  *
- * Usa las 11 columnas que ya tiene la planilla:
+ * Columnas:
  *  A Fecha | B Nombre | C Discos | D Movimientos | E Mínimos | F Perfecto |
  *  G Tiempo (s) | H Intentos de fórmula | I Fórmulas que probó |
- *  J ¿Acertó la fórmula? | K Respuesta del acertijo
+ *  J Respuesta del acertijo
  *
- * Novedad de esta versión: "¿Acertó la fórmula?" queda en "Sí" apenas
- * acierta una vez, aunque después pruebe otras fórmulas equivocadas.
+ * Se sacó la columna "¿Acertó la fórmula?": en "Fórmulas que probó" ya se ve
+ * el (Sí) o (No) de cada intento.
  */
 
 const HOJA = "Partidas";
 const ENCABEZADOS = [
   "Fecha", "Nombre", "Discos", "Movimientos", "Mínimos", "Perfecto",
   "Tiempo (s)", "Intentos de fórmula", "Fórmulas que probó",
-  "¿Acertó la fórmula?", "Respuesta del acertijo"
+  "Respuesta del acertijo"
 ];
 
-const COL_NOMBRE = 2, COL_INTENTOS = 8, COL_FORMULAS = 9,
-      COL_ACERTO = 10, COL_ACERTIJO = 11;
+const COL_NOMBRE = 2, COL_INTENTOS = 8, COL_FORMULAS = 9, COL_ACERTIJO = 10;
 
 function doPost(e) {
   try {
@@ -36,14 +35,6 @@ function doPost(e) {
       h.getRange(fila, COL_FORMULAS).setValue(texto);
       h.getRange(fila, COL_INTENTOS).setValue(texto.split("|").length).setNumberFormat("0");
 
-      // Si en TODA la lista de fórmulas hay alguna con "(Sí)", entonces acertó.
-      // Así no se pisa aunque después pruebe otras equivocadas.
-      if (texto.indexOf("(Sí)") !== -1) {
-        h.getRange(fila, COL_ACERTO).setValue("Sí");
-      } else {
-        h.getRange(fila, COL_ACERTO).setValue(datos.correcta);
-      }
-
     } else if (tipo === "acertijo") {
       const fila = filaDelAlumno(h, nombre);
       h.getRange(fila, COL_ACERTIJO).setValue(datos.respuesta || "");
@@ -51,7 +42,7 @@ function doPost(e) {
     } else {
       h.appendRow([
         new Date(), nombre, datos.disks, datos.moves, datos.min,
-        datos.perfect ? "Sí" : "No", datos.secs, "", "", "", ""
+        datos.perfect ? "Sí" : "No", datos.secs, "", "", ""
       ]);
     }
     return responder({ ok: true });
@@ -64,7 +55,7 @@ function doPost(e) {
 function doGet() {
   const filas = Math.max(0, hoja().getLastRow() - 1);
   return ContentService.createTextOutput(
-    "OK - Conector v4. Registros: " + filas
+    "OK - Conector v5. Registros: " + filas
   );
 }
 
@@ -79,7 +70,7 @@ function filaDelAlumno(h, nombre) {
       }
     }
   }
-  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", "", ""]);
+  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", ""]);
   return h.getLastRow();
 }
 
