@@ -730,7 +730,9 @@ function descargarExcel(){
 //   internet queda en una cola y se reintenta sola después.
 // ============================================================
 let enviandoCola = false;
-let alumnoActual = "";        // para detectar cuando empieza a jugar otra persona
+let alumnoActual = "";           // para detectar cuando empieza a jugar otra persona
+let ultimaFormulaEnviada = "";   // para no registrar dos veces el mismo intento
+let ultimaRespuestaEnviada = ""; // idem con la respuesta del acertijo
 
 function cargarCola() {
   try { return JSON.parse(localStorage.getItem(COLA_KEY)) || []; }
@@ -876,6 +878,8 @@ function reiniciarInvestigacion() {
   const gracias = document.getElementById("respuestaGracias");
   gracias.hidden = true;
   gracias.textContent = "";
+  ultimaFormulaEnviada = "";
+  ultimaRespuestaEnviada = "";
   localStorage.removeItem(INTENTOS_KEY);
 }
 
@@ -894,6 +898,13 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
     return;
   }
   formulaAviso.textContent = "";
+
+  // Evita que un doble clic mande la misma fórmula dos veces
+  if (texto === ultimaFormulaEnviada) {
+    mostrarDevolucion(evaluarFormula(texto));
+    return;
+  }
+  ultimaFormulaEnviada = texto;
 
   const estado = evaluarFormula(texto);
   const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
@@ -928,7 +939,10 @@ document.getElementById("respuestaBtn").addEventListener("click", () => {
     return;
   }
   aviso.textContent = "";
-  enviarANube({ tipo: "acertijo", name: nombre, respuesta: texto });
+  if (texto !== ultimaRespuestaEnviada) {          // no repetir por doble clic
+    ultimaRespuestaEnviada = texto;
+    enviarANube({ tipo: "acertijo", name: nombre, respuesta: texto });
+  }
   gracias.hidden = false;
   gracias.textContent = "¡Muy bien! Tu explicación quedó registrada. Comparala con la de tus compañeros.";
 });
