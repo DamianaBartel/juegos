@@ -733,6 +733,7 @@ let enviandoCola = false;
 let alumnoActual = "";           // para detectar cuando empieza a jugar otra persona
 let ultimaFormulaEnviada = "";   // para no registrar dos veces el mismo intento
 let ultimaRespuestaEnviada = ""; // idem con la respuesta del acertijo
+let yaAcertoFormula = false;     // cuando acierta, no se manda nada más: así el "Sí" no se pisa
 
 function cargarCola() {
   try { return JSON.parse(localStorage.getItem(COLA_KEY)) || []; }
@@ -880,6 +881,7 @@ function reiniciarInvestigacion() {
   gracias.textContent = "";
   ultimaFormulaEnviada = "";
   ultimaRespuestaEnviada = "";
+  yaAcertoFormula = false;
   localStorage.removeItem(INTENTOS_KEY);
 }
 
@@ -907,16 +909,21 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
   ultimaFormulaEnviada = texto;
 
   const estado = evaluarFormula(texto);
-  const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
-  localStorage.setItem(INTENTOS_KEY, intento);
 
-  enviarANube({
-    tipo: "formula",
-    name: nombre,
-    intento: intento,
-    formula: texto,
-    correcta: estado === true ? "Sí" : estado === false ? "No" : "No se entiende"
-  });
+  // Una vez que acertó, no se manda nada más a la planilla: así el "Sí"
+  // de la columna "¿Acertó la fórmula?" no lo pisa un intento posterior.
+  if (!yaAcertoFormula) {
+    const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
+    localStorage.setItem(INTENTOS_KEY, intento);
+    enviarANube({
+      tipo: "formula",
+      name: nombre,
+      intento: intento,
+      formula: texto,
+      correcta: estado === true ? "Sí" : estado === false ? "No" : "No se entiende"
+    });
+    if (estado === true) yaAcertoFormula = true;
+  }
 
   mostrarDevolucion(estado);
 });
