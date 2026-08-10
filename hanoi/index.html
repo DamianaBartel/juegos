@@ -910,20 +910,18 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
 
   const estado = evaluarFormula(texto);
 
-  // Una vez que acertó, no se manda nada más a la planilla: así el "Sí"
-  // de la columna "¿Acertó la fórmula?" no lo pisa un intento posterior.
-  if (!yaAcertoFormula) {
-    const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
-    localStorage.setItem(INTENTOS_KEY, intento);
-    enviarANube({
-      tipo: "formula",
-      name: nombre,
-      intento: intento,
-      formula: texto,
-      correcta: estado === true ? "Sí" : estado === false ? "No" : "No se entiende"
-    });
-    if (estado === true) yaAcertoFormula = true;
-  }
+  const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
+  localStorage.setItem(INTENTOS_KEY, intento);
+  if (estado === true) yaAcertoFormula = true;
+
+  enviarANube({
+    tipo: "formula",
+    name: nombre,
+    intento: intento,
+    formula: texto,
+    correcta: estado === true ? "Sí" : estado === false ? "No" : "No se entiende",
+    yaAcerto: yaAcertoFormula          // el conector usa esto para no pisar el "Sí"
+  });
 
   mostrarDevolucion(estado);
 });

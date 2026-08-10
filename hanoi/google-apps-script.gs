@@ -1,93 +1,60 @@
-/**
- * CONECTOR: Torre de Hanói  ->  Google Sheets   (v5)
- *
- * Columnas:
- *  A Fecha | B Nombre | C Discos | D Movimientos | E Mínimos | F Perfecto |
- *  G Tiempo (s) | H Intentos de fórmula | I Fórmulas que probó |
- *  J Respuesta del acertijo
- *
- * Se sacó la columna "¿Acertó la fórmula?": en "Fórmulas que probó" ya se ve
- * el (Sí) o (No) de cada intento.
- */
-
 const HOJA = "Partidas";
-const ENCABEZADOS = [
-  "Fecha", "Nombre", "Discos", "Movimientos", "Mínimos", "Perfecto",
-  "Tiempo (s)", "Intentos de fórmula", "Fórmulas que probó",
-  "Respuesta del acertijo"
-];
-
-const COL_NOMBRE = 2, COL_INTENTOS = 8, COL_FORMULAS = 9, COL_ACERTIJO = 10;
+const CAB = ["Fecha", "Nombre", "Discos", "Movimientos", "Minimos", "Perfecto",
+             "Tiempo (s)", "Intentos de formula", "Formulas que probo",
+             "Acerto la formula", "Respuesta del acertijo"];
 
 function doPost(e) {
   try {
-    const datos = JSON.parse(e.postData.contents);
-    const tipo = datos.tipo || "partida";
-    const h = hoja();
-    const nombre = (datos.name || "Anónimo").toString().trim();
+    var d = JSON.parse(e.postData.contents);
+    var h = hoja();
+    var nombre = String(d.name || "Anonimo").trim();
+    var t = d.tipo || "partida";
 
-    if (tipo === "formula") {
-      const fila = filaDelAlumno(h, nombre);
-      const previas = String(h.getRange(fila, COL_FORMULAS).getValue() || "");
-      const nueva = datos.formula + " (" + datos.correcta + ")";
-      const texto = previas ? previas + "  |  " + nueva : nueva;
+    if (t === "formula") {
+      var f = fila(h, nombre);
+      var prev = String(h.getRange(f, 9).getValue() || "");
+      var uno = d.formula + " (" + d.correcta + ")";
+      var txt = prev ? prev + "  |  " + uno : uno;
 
-      h.getRange(fila, COL_FORMULAS).setValue(texto);
-      h.getRange(fila, COL_INTENTOS).setValue(texto.split("|").length).setNumberFormat("0");
+      h.getRange(f, 9).setValue(txt);
+      h.getRange(f, 8).setValue(txt.split("|").length).setNumberFormat("0");
 
-    } else if (tipo === "acertijo") {
-      const fila = filaDelAlumno(h, nombre);
-      h.getRange(fila, COL_ACERTIJO).setValue(datos.respuesta || "");
+      var acerto = d.yaAcerto === true || txt.indexOf("(Si") > -1;
+      h.getRange(f, 10).setValue(acerto ? "Si" : d.correcta);
+
+    } else if (t === "acertijo") {
+      h.getRange(fila(h, nombre), 11).setValue(d.respuesta || "");
 
     } else {
-      h.appendRow([
-        new Date(), nombre, datos.disks, datos.moves, datos.min,
-        datos.perfect ? "Sí" : "No", datos.secs, "", "", ""
-      ]);
+      h.appendRow([new Date(), nombre, d.disks, d.moves, d.min,
+                   d.perfect ? "Si" : "No", d.secs, "", "", "", ""]);
     }
-    return responder({ ok: true });
+    return ContentService.createTextOutput("ok");
   } catch (err) {
-    return responder({ ok: false, error: String(err) });
+    return ContentService.createTextOutput("error: " + err);
   }
 }
 
-/** Abrir la URL en el navegador muestra esto: sirve para probar que quedó bien. */
 function doGet() {
-  const filas = Math.max(0, hoja().getLastRow() - 1);
   return ContentService.createTextOutput(
-    "OK - Conector v5. Registros: " + filas
-  );
+    "Conector v7. Registros: " + Math.max(0, hoja().getLastRow() - 1));
 }
 
-/** Busca la última fila del alumno. Si no tiene ninguna, le crea una. */
-function filaDelAlumno(h, nombre) {
-  const ultima = h.getLastRow();
-  if (ultima >= 2) {
-    const nombres = h.getRange(2, COL_NOMBRE, ultima - 1, 1).getValues();
-    for (let i = nombres.length - 1; i >= 0; i--) {
-      if (String(nombres[i][0]).trim().toLowerCase() === nombre.toLowerCase()) {
-        return i + 2;
-      }
+function fila(h, nombre) {
+  var u = h.getLastRow();
+  if (u >= 2) {
+    var n = h.getRange(2, 2, u - 1, 1).getValues();
+    for (var i = n.length - 1; i >= 0; i--) {
+      if (String(n[i][0]).trim().toLowerCase() === nombre.toLowerCase()) return i + 2;
     }
   }
-  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", ""]);
+  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", "", ""]);
   return h.getLastRow();
 }
 
-/** Devuelve la hoja, creándola con encabezados si todavía no existe. */
 function hoja() {
-  const libro = SpreadsheetApp.getActiveSpreadsheet();
-  let h = libro.getSheetByName(HOJA) || libro.insertSheet(HOJA);
-  if (h.getLastRow() === 0) {
-    h.appendRow(ENCABEZADOS);
-    h.getRange(1, 1, 1, ENCABEZADOS.length).setFontWeight("bold");
-    h.setFrozenRows(1);
-  }
+  var lib = SpreadsheetApp.getActiveSpreadsheet();
+  var h = lib.getSheetByName(HOJA) || lib.insertSheet(HOJA);
+  if (h.getLastRow() === 0) h.appendRow(CAB);
   return h;
-}
-
-function responder(obj) {
-  return ContentService
-    .createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
 }
