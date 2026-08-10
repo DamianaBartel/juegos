@@ -4,22 +4,25 @@
  * Guarda TODO en una sola pestaña ("Partidas"), con estas columnas:
  *
  *  A Fecha | B Nombre | C Discos | D Movimientos | E Mínimos | F Perfecto |
- *  G Tiempo (s) | H Fórmulas que probó |
- *  I ¿Acertó la fórmula? | J Respuesta del acertijo
+ *  G Tiempo (s) | H Fórmulas que probó | I ¿Acertó la fórmula? |
+ *  J Respuesta del acertijo
  *
  * Cada partida ganada agrega una fila.
  * Los intentos de fórmula y la respuesta del acertijo se escriben en la
  * ÚLTIMA fila de ese alumno, así queda todo su recorrido en un solo renglón.
+ *
+ * "¿Acertó la fórmula?" queda en "Sí" apenas acierta una vez, aunque
+ * después pruebe otras fórmulas equivocadas.
  */
 
 const HOJA = "Partidas";
 const ENCABEZADOS = [
   "Fecha", "Nombre", "Discos", "Movimientos", "Mínimos", "Perfecto",
-  "Tiempo (s)", "Intentos de fórmula", "Fórmulas que probó",
-  "¿Acertó la fórmula?", "Respuesta del acertijo"
+  "Tiempo (s)", "Fórmulas que probó", "¿Acertó la fórmula?",
+  "Respuesta del acertijo"
 ];
 
-const COL_NOMBRE = 2, COL_INTENTOS = 8, COL_FORMULAS = 9, COL_ACERTO = 10, COL_ACERTIJO = 11;
+const COL_NOMBRE = 2, COL_FORMULAS = 8, COL_ACERTO = 9, COL_ACERTIJO = 10;
 
 function doPost(e) {
   try {
@@ -32,15 +35,12 @@ function doPost(e) {
       const fila = filaDelAlumno(h, nombre);
       const previas = String(h.getRange(fila, COL_FORMULAS).getValue() || "");
       const nueva = datos.formula + " (" + datos.correcta + ")";
-      const texto = previas ? previas + "  |  " + nueva : nueva;
+      h.getRange(fila, COL_FORMULAS)
+        .setValue(previas ? previas + "  |  " + nueva : nueva);
 
-      // El número de intentos se cuenta sobre el texto, así no depende
-      // del formato que tenga la celda (antes se leía como fecha).
-      const intentos = texto.split("|").length;
-
-      h.getRange(fila, COL_FORMULAS).setValue(texto);
-      h.getRange(fila, COL_INTENTOS).setValue(intentos).setNumberFormat("0");
-      h.getRange(fila, COL_ACERTO).setValue(datos.correcta);
+      // Si ya había acertado antes, no se pisa con un intento posterior.
+      const yaAcerto = String(h.getRange(fila, COL_ACERTO).getValue()).trim() === "Sí";
+      if (!yaAcerto) h.getRange(fila, COL_ACERTO).setValue(datos.correcta);
 
     } else if (tipo === "acertijo") {
       const fila = filaDelAlumno(h, nombre);
@@ -49,7 +49,7 @@ function doPost(e) {
     } else {
       h.appendRow([
         new Date(), nombre, datos.disks, datos.moves, datos.min,
-        datos.perfect ? "Sí" : "No", datos.secs, "", "", "", ""
+        datos.perfect ? "Sí" : "No", datos.secs, "", "", ""
       ]);
     }
     return responder({ ok: true });
@@ -62,7 +62,7 @@ function doPost(e) {
 function doGet() {
   const filas = Math.max(0, hoja().getLastRow() - 1);
   return ContentService.createTextOutput(
-    "OK - El conector funciona. Registros: " + filas
+    "OK - Conector v3. Registros: " + filas
   );
 }
 
@@ -77,7 +77,7 @@ function filaDelAlumno(h, nombre) {
       }
     }
   }
-  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", "", ""]);
+  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", ""]);
   return h.getLastRow();
 }
 
