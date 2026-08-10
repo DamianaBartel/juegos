@@ -624,7 +624,7 @@ function checkWin() {
         : `¡Felicitaciones! Lo lograste en ${moves}. El récord posible es ${min}, ¿te animás a igualarlo?`,
       "sentado"
     );
-    const rec = { name, disks: numDisks, moves, min, secs, perfect, date: new Date().toLocaleString("es-AR") };
+    const rec = { tipo: "partida", name, disks: numDisks, moves, min, secs, perfect, date: new Date().toLocaleString("es-AR") };
     saveRecord(rec);
     enviarANube(rec);
   }
@@ -860,6 +860,8 @@ function mostrarDevolucion(estado) {
   }
 }
 
+const INTENTOS_KEY = "hanoi_intentos_v1";
+
 document.getElementById("formulaBtn").addEventListener("click", () => {
   const texto = formulaInput.value.trim();
   if (!texto) {
@@ -867,8 +869,28 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
     formulaInput.focus();
     return;
   }
+  const nombre = nameInput.value.trim();
+  if (!nombre) {
+    formulaAviso.textContent = "Escribí tu nombre arriba para que quede registrado tu intento.";
+    nameInput.focus();
+    nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   formulaAviso.textContent = "";
-  mostrarDevolucion(evaluarFormula(texto));
+
+  const estado = evaluarFormula(texto);
+  const intento = (parseInt(localStorage.getItem(INTENTOS_KEY)) || 0) + 1;
+  localStorage.setItem(INTENTOS_KEY, intento);
+
+  enviarANube({
+    tipo: "formula",
+    name: nombre,
+    intento: intento,
+    formula: texto,
+    correcta: estado === true ? "Sí" : estado === false ? "No" : "No se entiende"
+  });
+
+  mostrarDevolucion(estado);
 });
 
 document.getElementById("respuestaBtn").addEventListener("click", () => {
@@ -880,9 +902,18 @@ document.getElementById("respuestaBtn").addEventListener("click", () => {
     gracias.hidden = true;
     return;
   }
+  const nombre = nameInput.value.trim();
+  if (!nombre) {
+    aviso.textContent = "Escribí tu nombre arriba para que quede registrada tu respuesta.";
+    gracias.hidden = true;
+    nameInput.focus();
+    nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
   aviso.textContent = "";
+  enviarANube({ tipo: "acertijo", name: nombre, respuesta: texto });
   gracias.hidden = false;
-  gracias.textContent = "¡Muy bien! Guardaste tu explicación. Mostrásela a tu docente y comparala con la de tus compañeros.";
+  gracias.textContent = "¡Muy bien! Tu explicación quedó registrada. Comparala con la de tus compañeros.";
 });
 
 // ---- Eventos ----
