@@ -1,62 +1,51 @@
 /**
  * CONECTOR: Torre de Hanói  ->  Google Sheets
  *
- * Guarda tres cosas en tres pestañas distintas de la misma planilla:
- *   Partidas  -> cada partida ganada
- *   Fórmulas  -> cada intento de fórmula (cuál escribió y si acertó)
- *   Acertijo  -> la respuesta a la pregunta de la leyenda
+ * Guarda TODO en una sola pestaña ("Partidas"), con estas columnas:
  *
- * ---------------------------------------------------------------
- * CÓMO ACTUALIZARLO (si ya lo tenías funcionando):
- *   1. Abrí tu planilla > Extensiones > Apps Script
- *   2. Borrá todo y pegá este archivo completo. Guardá (💾)
- *   3. Implementar > ADMINISTRAR IMPLEMENTACIONES
- *   4. Clic en el lápiz (editar) de la implementación que ya existe
- *   5. En "Versión" elegí NUEVA VERSIÓN y apretá Implementar
+ *  A Fecha | B Nombre | C Discos | D Movimientos | E Mínimos | F Perfecto |
+ *  G Tiempo (s) | H Intentos de fórmula | I Fórmulas que probó |
+ *  J ¿Acertó la fórmula? | K Respuesta del acertijo
  *
- *   ⚠ Hacelo así (editando la que ya existe) para que la URL NO cambie.
- *      Si creás una implementación nueva, la URL cambia y hay que
- *      actualizarla también en el juego.
- * ---------------------------------------------------------------
+ * Cada partida ganada agrega una fila.
+ * Los intentos de fórmula y la respuesta del acertijo se escriben en la
+ * ÚLTIMA fila de ese alumno, así queda todo su recorrido en un solo renglón.
  */
 
-/** Recibe los datos del juego y los guarda donde corresponde. */
+const HOJA = "Partidas";
+const ENCABEZADOS = [
+  "Fecha", "Nombre", "Discos", "Movimientos", "Mínimos", "Perfecto",
+  "Tiempo (s)", "Intentos de fórmula", "Fórmulas que probó",
+  "¿Acertó la fórmula?", "Respuesta del acertijo"
+];
+
+const COL_NOMBRE = 2, COL_INTENTOS = 8, COL_FORMULAS = 9, COL_ACERTO = 10, COL_ACERTIJO = 11;
+
 function doPost(e) {
   try {
     const datos = JSON.parse(e.postData.contents);
     const tipo = datos.tipo || "partida";
+    const h = hoja();
+    const nombre = (datos.name || "Anónimo").toString().trim();
 
     if (tipo === "formula") {
-      hoja("Fórmulas", ["Fecha", "Nombre", "Intento N°", "Fórmula que escribió", "¿Acertó?"])
-        .appendRow([
-          new Date(),
-          datos.name || "Anónimo",
-          datos.intento || "",
-          datos.formula || "",
-          datos.correcta
-        ]);
+      const fila = filaDelAlumno(h, nombre);
+      const intentos = (Number(h.getRange(fila, COL_INTENTOS).getValue()) || 0) + 1;
+      const previas = h.getRange(fila, COL_FORMULAS).getValue();
+      const nueva = datos.formula + " (" + datos.correcta + ")";
+      h.getRange(fila, COL_INTENTOS).setValue(intentos);
+      h.getRange(fila, COL_FORMULAS).setValue(previas ? previas + "  |  " + nueva : nueva);
+      h.getRange(fila, COL_ACERTO).setValue(datos.correcta);
 
     } else if (tipo === "acertijo") {
-      hoja("Acertijo", ["Fecha", "Nombre", "Respuesta a la leyenda"])
-        .appendRow([
-          new Date(),
-          datos.name || "Anónimo",
-          datos.respuesta || ""
-        ]);
+      const fila = filaDelAlumno(h, nombre);
+      h.getRange(fila, COL_ACERTIJO).setValue(datos.respuesta || "");
 
     } else {
-      hoja("Partidas", ["Fecha", "Nombre", "Discos", "Movimientos",
-                        "Mínimos", "Perfecto", "Tiempo (s)", "Fecha del alumno"])
-        .appendRow([
-          new Date(),
-          datos.name || "Anónimo",
-          datos.disks,
-          datos.moves,
-          datos.min,
-          datos.perfect ? "Sí" : "No",
-          datos.secs,
-          datos.date || ""
-        ]);
+      h.appendRow([
+        new Date(), nombre, datos.disks, datos.moves, datos.min,
+        datos.perfect ? "Sí" : "No", datos.secs, "", "", "", ""
+      ]);
     }
     return responder({ ok: true });
   } catch (err) {
@@ -66,26 +55,34 @@ function doPost(e) {
 
 /** Abrir la URL en el navegador muestra esto: sirve para probar que quedó bien. */
 function doGet() {
-  const libro = SpreadsheetApp.getActiveSpreadsheet();
-  const contar = function (nombre) {
-    const h = libro.getSheetByName(nombre);
-    return h ? Math.max(0, h.getLastRow() - 1) : 0;
-  };
+  const filas = Math.max(0, hoja().getLastRow() - 1);
   return ContentService.createTextOutput(
-    "OK - El conector funciona." +
-    " Partidas: " + contar("Partidas") +
-    " | Fórmulas: " + contar("Fórmulas") +
-    " | Acertijo: " + contar("Acertijo")
+    "OK - El conector funciona. Registros: " + filas
   );
 }
 
-/** Devuelve la pestaña pedida, creándola con sus encabezados si no existe. */
-function hoja(nombre, encabezados) {
+/** Busca la última fila del alumno. Si no tiene ninguna, le crea una. */
+function filaDelAlumno(h, nombre) {
+  const ultima = h.getLastRow();
+  if (ultima >= 2) {
+    const nombres = h.getRange(2, COL_NOMBRE, ultima - 1, 1).getValues();
+    for (let i = nombres.length - 1; i >= 0; i--) {
+      if (String(nombres[i][0]).trim().toLowerCase() === nombre.toLowerCase()) {
+        return i + 2;
+      }
+    }
+  }
+  h.appendRow([new Date(), nombre, "", "", "", "", "", "", "", "", ""]);
+  return h.getLastRow();
+}
+
+/** Devuelve la hoja, creándola con encabezados si todavía no existe. */
+function hoja() {
   const libro = SpreadsheetApp.getActiveSpreadsheet();
-  let h = libro.getSheetByName(nombre) || libro.insertSheet(nombre);
+  let h = libro.getSheetByName(HOJA) || libro.insertSheet(HOJA);
   if (h.getLastRow() === 0) {
-    h.appendRow(encabezados);
-    h.getRange(1, 1, 1, encabezados.length).setFontWeight("bold");
+    h.appendRow(ENCABEZADOS);
+    h.getRange(1, 1, 1, ENCABEZADOS.length).setFontWeight("bold");
     h.setFrozenRows(1);
   }
   return h;
