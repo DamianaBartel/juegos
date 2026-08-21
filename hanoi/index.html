@@ -341,6 +341,10 @@
       <input type="text" id="playerName" placeholder="Escribí tu nombre" maxlength="20">
     </div>
     <div class="field">
+      <label for="playerSurname">Tu apellido</label>
+      <input type="text" id="playerSurname" placeholder="Escribí tu apellido" maxlength="20">
+    </div>
+    <div class="field">
       <label for="diskCount">Cantidad de discos</label>
       <input type="number" id="diskCount" min="1" max="10" value="3">
     </div>
@@ -418,6 +422,7 @@
 <script>
 const STORAGE_KEY = "hanoi_records_v1";
 const NAME_KEY = "hanoi_lastname_v1";
+const APELLIDO_KEY = "hanoi_apellido_v1";
 const COLA_KEY = "hanoi_pendientes_v1";
 
 // ⬇⬇ PEGÁ ACÁ la URL de tu Apps Script (la que termina en /exec) ⬇⬇
@@ -448,6 +453,28 @@ const minMovesEl = document.getElementById("minMoves");
 const timerEl = document.getElementById("timer");
 const diskInput = document.getElementById("diskCount");
 const nameInput = document.getElementById("playerName");
+const apellidoInput = document.getElementById("playerSurname");
+
+/* Devuelve "Nombre Apellido", o "" si falta alguno de los dos. */
+function nombreCompleto() {
+  const n = nameInput.value.trim();
+  const a = apellidoInput.value.trim();
+  return (n && a) ? n + " " + a : "";
+}
+
+/* Si falta nombre o apellido, avisa y devuelve el texto del aviso.
+   Si está todo, devuelve "". */
+function faltaNombre() {
+  if (!nameInput.value.trim()) {
+    nameInput.focus();
+    return "Escribí tu nombre para poder empezar.";
+  }
+  if (!apellidoInput.value.trim()) {
+    apellidoInput.focus();
+    return "Escribí también tu apellido, así no te confunden con un compañero.";
+  }
+  return "";
+}
 const bubbleEl = document.getElementById("bubble");
 const presImg = document.getElementById("presImg");
 
@@ -611,7 +638,7 @@ function checkWin() {
     const secs = Math.floor((Date.now() - startTime) / 1000);
     const min = minMoves(numDisks);
     const perfect = moves === min;
-    const name = (nameInput.value || "Anónimo").trim() || "Anónimo";
+    const name = nombreCompleto() || "Anónimo";
     setMessage(
       perfect
         ? `🎉 ¡PERFECTO, ${name}! Resolviste ${numDisks} discos en el mínimo de ${min} movimientos.`
@@ -892,13 +919,13 @@ document.getElementById("formulaBtn").addEventListener("click", () => {
     formulaInput.focus();
     return;
   }
-  const nombre = nameInput.value.trim();
-  if (!nombre) {
-    formulaAviso.textContent = "Escribí tu nombre arriba para que quede registrado tu intento.";
-    nameInput.focus();
-    nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  const falta = faltaNombre();
+  if (falta) {
+    formulaAviso.textContent = falta + " Es arriba, donde empezás la partida.";
+    document.querySelector(".controls").scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
+  const nombre = nombreCompleto();
   formulaAviso.textContent = "";
 
   // Evita que un doble clic mande la misma fórmula dos veces
@@ -937,14 +964,14 @@ document.getElementById("respuestaBtn").addEventListener("click", () => {
     gracias.hidden = true;
     return;
   }
-  const nombre = nameInput.value.trim();
-  if (!nombre) {
-    aviso.textContent = "Escribí tu nombre arriba para que quede registrada tu respuesta.";
+  const falta = faltaNombre();
+  if (falta) {
+    aviso.textContent = falta + " Es arriba, donde empezás la partida.";
     gracias.hidden = true;
-    nameInput.focus();
-    nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.querySelector(".controls").scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
+  const nombre = nombreCompleto();
   aviso.textContent = "";
   if (texto !== ultimaRespuestaEnviada) {          // no repetir por doble clic
     ultimaRespuestaEnviada = texto;
@@ -956,19 +983,20 @@ document.getElementById("respuestaBtn").addEventListener("click", () => {
 
 // ---- Eventos ----
 document.getElementById("startBtn").addEventListener("click", () => {
-  const nom = nameInput.value.trim();
-  if (!nom) {                                   // el nombre es obligatorio
-    setMessage("Escribí tu nombre para poder empezar.", "mal");
-    decir("¡Ruh-roh! Así no, ¿eh? Sin tu nombre no empezamos.", "enojado");
-    nameInput.focus();
+  const aviso = faltaNombre();                  // nombre y apellido obligatorios
+  if (aviso) {
+    setMessage(aviso, "mal");
+    decir("¡Ruh-roh! Así no, ¿eh? Necesito tu nombre y tu apellido.", "enojado");
     return;
   }
-  // Si el nombre cambió, es otra persona: se limpia lo del alumno anterior
-  if (alumnoActual && nom.toLowerCase() !== alumnoActual.toLowerCase()) {
+  const completo = nombreCompleto();
+  // Si cambió el nombre, es otra persona: se limpia lo del alumno anterior
+  if (alumnoActual && completo.toLowerCase() !== alumnoActual.toLowerCase()) {
     reiniciarInvestigacion();
   }
-  alumnoActual = nom;
-  localStorage.setItem(NAME_KEY, nom);
+  alumnoActual = completo;
+  localStorage.setItem(NAME_KEY, nameInput.value.trim());
+  localStorage.setItem(APELLIDO_KEY, apellidoInput.value.trim());
   newGame();
 });
 document.getElementById("resetBtn").addEventListener("click", resetGame);
@@ -986,6 +1014,7 @@ diskInput.addEventListener("input", () => {
 
 // ---- Inicio ----
 nameInput.value = localStorage.getItem(NAME_KEY) || "";
+apellidoInput.value = localStorage.getItem(APELLIDO_KEY) || "";
 minMovesEl.textContent = minMoves(parseInt(diskInput.value) || 3);
 renderRecords();
 render();
